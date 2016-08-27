@@ -98,7 +98,6 @@ namespace Catel.Windows.Controls
 #endif
             };
 
-            _logic.ViewModelClosed += OnViewModelClosed;
             _logic.ViewModelClosedAsync += OnViewModelClosedAsync;
             _logic.ViewModelChanged += (sender, e) => RaiseViewModelChanged();
 
@@ -123,7 +122,7 @@ namespace Catel.Windows.Controls
                 OnUnloaded(e);
             };
 
-            this.AddDataContextChangedHandler((sender, e) => _viewDataContextChanged.SafeInvoke(this, new Catel.MVVM.Views.DataContextChangedEventArgs(e.OldValue, e.NewValue)));
+            this.AddDataContextChangedHandler((sender, e) => _viewDataContextChanged.SafeInvoke(this, () => new Catel.MVVM.Views.DataContextChangedEventArgs(e.OldValue, e.NewValue)));
         }
         #endregion
 
@@ -197,6 +196,18 @@ namespace Catel.Windows.Controls
         }
 
         /// <summary>
+        /// Gets or sets a value for the <see cref="SupportParentViewModelContainers"/> property. This way, the behavior
+        /// can be changed an entire application to prevent disabling it on every control.
+        /// <para />
+        /// The default value is <c>false</c>.
+        /// </summary>
+        public static bool DefaultSupportParentViewModelContainersValue
+        {
+            get { return UserControlLogic.DefaultSupportParentViewModelContainersValue; }
+            set { UserControlLogic.DefaultSupportParentViewModelContainersValue = value; }
+        }
+
+        /// <summary>
         /// Gets or sets the unload behavior when the data context of the target control changes.
         /// </summary>
         /// <value>The unload behavior.</value>
@@ -245,7 +256,7 @@ namespace Catel.Windows.Controls
             set { UserControlLogic.DefaultTransferStylesAndTransitionsToViewModelGridValue = value; }
         }
 
-#if NET || SL5
+#if NET
         /// <summary>
         /// Gets or sets a value indicating whether to skip the search for an info bar message control. If not skipped,
         /// the user control will search for a the first <see cref="InfoBarMessageControl"/> that can be found. 
@@ -393,7 +404,7 @@ namespace Catel.Windows.Controls
             OnViewModelChanged();
 
             ViewModelChanged.SafeInvoke(this);
-            PropertyChanged.SafeInvoke(this, new PropertyChangedEventArgs("ViewModel"));
+            PropertyChanged.SafeInvoke(this, () => new PropertyChangedEventArgs("ViewModel"));
         }
 
         /// <summary>
@@ -412,16 +423,6 @@ namespace Catel.Windows.Controls
         /// </summary>
         /// <param name="e">The <see cref="System.ComponentModel.PropertyChangedEventArgs"/> instance containing the event data.</param>
         protected virtual void OnViewModelPropertyChanged(PropertyChangedEventArgs e)
-        {
-        }
-
-        /// <summary>
-        /// Called when the <see cref="ViewModel"/> has been closed.
-        /// </summary>
-        /// <param name="sender">The sender.</param>
-        /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        [ObsoleteEx(ReplacementTypeOrMember = "OnViewModelClosedAsync", TreatAsErrorFromVersion = "4.2", RemoveInVersion = "5.0")]
-        protected virtual void OnViewModelClosed(object sender, ViewModelClosedEventArgs e)
         {
         }
 

@@ -235,7 +235,7 @@ namespace Catel.Data
         /// Gets or sets the equality comparer used to compare model bases with each other.
         /// </summary>
         /// <value>The equality comparer.</value>
-#if NET || SILVERLIGHT
+#if NET
         [Browsable(false)]
 #endif
         [XmlIgnore]
@@ -266,7 +266,7 @@ namespace Catel.Data
         /// The default value is <c>false</c>.
         /// </summary>
         /// <value><c>true</c> if all models should behave as lean and mean; otherwise, <c>false</c>.</value>
-#if NET || SILVERLIGHT
+#if NET
         [Browsable(false)]
 #endif
         [XmlIgnore]
@@ -278,7 +278,7 @@ namespace Catel.Data
         /// A lean and mean model will not handle any validation code, nor will it raise any change notification events.
         /// </summary>
         /// <value><c>true</c> if this is a lean and mean model; otherwise, <c>false</c>.</value>
-#if NET || SILVERLIGHT
+#if NET
         [Browsable(false)]
 #endif
         [XmlIgnore]
@@ -292,11 +292,12 @@ namespace Catel.Data
         /// Gets or sets a value indicating whether property change notifications are currently disabled for all instances.
         /// </summary>
         /// <value><c>true</c> if property change notifications should be disabled for all instances; otherwise, <c>false</c>.</value>
-#if NET || SILVERLIGHT
+        /// TODO: Try to revert to internal but is required by XAMARIN_FORMS
+#if NET
         [Browsable(false)]
 #endif
         [XmlIgnore]
-        internal static bool DisablePropertyChangeNotifications { get; set; }
+        public static bool DisablePropertyChangeNotifications { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether event subscriptions of child values should be disabled.
@@ -315,7 +316,7 @@ namespace Catel.Data
         /// Gets the property data manager that manages the properties of this object.
         /// </summary>
         /// <value>The property data manager.</value>
-#if NET || SILVERLIGHT
+#if NET
         [Browsable(false)]
 #endif
         [XmlIgnore]
@@ -327,7 +328,7 @@ namespace Catel.Data
         /// <value>
         /// <c>true</c> if this object is currently initializing; otherwise, <c>false</c>.
         /// </value>
-#if NET || SILVERLIGHT
+#if NET
         [Browsable(false)]
 #endif
         [XmlIgnore]
@@ -339,7 +340,7 @@ namespace Catel.Data
         /// <value>
         /// <c>true</c> if this object is initialized; otherwise, <c>false</c>.
         /// </value>
-#if NET || SILVERLIGHT
+#if NET
         [Browsable(false)]
 #endif
         [XmlIgnore]
@@ -349,7 +350,7 @@ namespace Catel.Data
         /// Gets or sets a value indicating whether the deserialized data is available, which means that
         /// OnDeserialized is invoked.
         /// </summary>
-#if NET || SILVERLIGHT
+#if NET
         [Browsable(false)]
 #endif
         [XmlIgnore]
@@ -358,7 +359,7 @@ namespace Catel.Data
         /// <summary>
         /// Gets or sets a value indicating whether the object is fully deserialized.
         /// </summary>
-#if NET || SILVERLIGHT
+#if NET
         [Browsable(false)]
 #endif
         [XmlIgnore]
@@ -373,7 +374,7 @@ namespace Catel.Data
         /// <remarks>
         /// By default, this property is <c>false</c>.
         /// </remarks>
-#if NET || SILVERLIGHT
+#if NET
         [Browsable(false)]
 #endif
         protected bool AlwaysInvokeNotifyChanged { get; set; }
@@ -382,7 +383,7 @@ namespace Catel.Data
         /// Gets or sets a value indicating whether this object should handle (thus invoke the specific events) when
         /// a property of collection value has changed.
         /// </summary>
-#if NET || SILVERLIGHT
+#if NET
         [Browsable(false)]
 #endif
         protected bool HandlePropertyAndCollectionChanges { get; set; }
@@ -391,7 +392,7 @@ namespace Catel.Data
         /// Gets or sets a value indicating whether this object should automatically validate itself when a property value
         /// has changed.
         /// </summary>
-#if NET || SILVERLIGHT
+#if NET
         [Browsable(false)]
 #endif
         protected bool AutomaticallyValidateOnPropertyChanged { get; set; }
@@ -400,7 +401,7 @@ namespace Catel.Data
         /// Gets the parent.
         /// </summary>
         /// <value>The parent.</value>
-#if NET || SILVERLIGHT
+#if NET
         [Browsable(false)]
 #endif
         [XmlIgnore]
@@ -413,7 +414,7 @@ namespace Catel.Data
         /// Gets the name of the object. By default, this is the hash code of all the properties combined.
         /// </summary>
         /// <value>The name of the key.</value>
-#if NET || SILVERLIGHT
+#if NET
         [Browsable(false)]
 #endif
         [XmlIgnore]
@@ -437,13 +438,14 @@ namespace Catel.Data
         /// Gets or sets a value indicating whether this object is dirty (contains unsaved data).
         /// </summary>
         /// <value><c>true</c> if this instance is dirty; otherwise, <c>false</c>.</value>
-#if NET || SILVERLIGHT
+#if NET
         [Browsable(false)]
 #endif
         [XmlIgnore]
         public bool IsDirty
         {
-            get { return GetValue<bool>(IsDirtyProperty); }
+            // Note: we know what we are doing, use GetValueFast (but not SetValueFast)
+            get { return GetValueFast<bool>(IsDirtyProperty.Name); }
             protected set { SetValue(IsDirtyProperty, value); }
         }
 
@@ -455,13 +457,14 @@ namespace Catel.Data
         /// <summary>
         /// Gets or sets a value indicating whether this object is currently read-only. When the object is read-only, values can only be read, not set.
         /// </summary>
-#if NET || SILVERLIGHT
+#if NET
         [Browsable(false)]
 #endif
         [XmlIgnore]
         public bool IsReadOnly
         {
-            get { return GetValue<bool>(IsReadOnlyProperty); }
+            // Note: we know what we are doing, use GetValueFast (but not SetValueFast)
+            get { return GetValueFast<bool>(IsReadOnlyProperty.Name); }
             protected set { SetValue(IsReadOnlyProperty, value); }
         }
 
@@ -475,15 +478,15 @@ namespace Catel.Data
         /// Gets a value indicating whether the deserialization has succeeded. If automatic deserialization fails, the object
         /// should try to deserialize manually.
         /// </summary>
-#if NET || SILVERLIGHT
+#if NET
         [Browsable(false)]
 #endif
         [XmlIgnore]
         protected bool DeserializationSucceeded { get; private set; }
 
-        #endregion
+#endregion
 
-        #region Methods
+#region Methods
         /// <summary>
         /// Allows the initialization of custom properties. This is a virtual method that is called
         /// inside the constructor before the object is fully constructed.
@@ -533,7 +536,7 @@ namespace Catel.Data
 
             var type = GetType();
 
-#if !WINDOWS_PHONE && !NETFX_CORE && !PCL && !NET35
+#if !NETFX_CORE && !PCL
             lock (_propertyValuesIgnoredOrFailedForValidation)
             {
                 if (!_propertyValuesIgnoredOrFailedForValidation.ContainsKey(type))
@@ -575,7 +578,7 @@ namespace Catel.Data
                 {
                     lock (_propertyValuesLock)
                     {
-                        var propertyValue = GetValueFast(propertyData.Key);
+                        var propertyValue = GetValueFast<object>(propertyData.Key);
                         var propertyValueAsModelBase = propertyValue as ModelBase;
                         var propertyValueAsIEnumerable = propertyValue as IEnumerable;
 
@@ -737,21 +740,22 @@ namespace Catel.Data
 
             lock (_propertyValuesLock)
             {
-                if (_propertyValueChangeNotificationWrappers.ContainsKey(propertyName))
+                ChangeNotificationWrapper oldWrapper;
+
+                if (_propertyValueChangeNotificationWrappers.TryGetValue(propertyName, out oldWrapper))
                 {
-                    var oldWrapper = _propertyValueChangeNotificationWrappers[propertyName];
-                    if (oldWrapper != null)
-                    {
-                        oldWrapper.PropertyChanged -= OnPropertyObjectPropertyChanged;
-                        oldWrapper.CollectionChanged -= OnPropertyObjectCollectionChanged;
-                        oldWrapper.CollectionItemPropertyChanged -= OnPropertyObjectCollectionItemPropertyChanged;
-                        oldWrapper.UnsubscribeFromAllEvents();
-                    }
+                    oldWrapper.PropertyChanged -= OnPropertyObjectPropertyChanged;
+                    oldWrapper.CollectionChanged -= OnPropertyObjectCollectionChanged;
+                    oldWrapper.CollectionItemPropertyChanged -= OnPropertyObjectCollectionItemPropertyChanged;
+                    oldWrapper.UnsubscribeFromAllEvents();
                 }
 
                 if (!ChangeNotificationWrapper.IsUsefulForObject(propertyValue))
                 {
-                    _propertyValueChangeNotificationWrappers[propertyName] = null;
+                    if (oldWrapper != null)
+                    {
+                        _propertyValueChangeNotificationWrappers.Remove(propertyName);
+                    }
                 }
                 else
                 {
@@ -805,9 +809,9 @@ namespace Catel.Data
 
             SetDirtyAndAutomaticallyValidate(string.Empty, true);
         }
-        #endregion
+#endregion
 
-        #region INotifyPropertyChanged Members
+#region INotifyPropertyChanged Members
         /// <summary>
         /// Invokes the property changed for all registered properties.
         /// </summary>
@@ -975,6 +979,6 @@ namespace Catel.Data
                 Validate();
             }
         }
-        #endregion
+#endregion
     }
 }

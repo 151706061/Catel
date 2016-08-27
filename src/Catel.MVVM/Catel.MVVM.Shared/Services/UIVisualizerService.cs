@@ -4,7 +4,7 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-#if NET || SL5
+#if NET
 
 namespace Catel.Services
 {
@@ -19,6 +19,7 @@ namespace Catel.Services
     using Reflection;
     using Catel.Windows.Threading;
     using Threading;
+
 #if NET
     using Windows;
 #endif
@@ -60,7 +61,7 @@ namespace Catel.Services
         /// <exception cref="ArgumentNullException">The <paramref name="viewLocator"/> is <c>null</c>.</exception>
         public UIVisualizerService(IViewLocator viewLocator)
         {
-            Argument.IsNotNull(() => viewLocator);
+            Argument.IsNotNull("viewLocator", viewLocator);
 
             _viewLocator = viewLocator;
         }
@@ -69,8 +70,6 @@ namespace Catel.Services
         /// <summary>
         /// Gets the type of the window that this implementation of the <see cref="IUIVisualizerService"/> interface
         /// supports.
-        /// <para />
-        /// The default value is <c>Window</c> in WPF and <c>ChildWindow</c> in Silverlight.
         /// </summary>
         /// <value>
         /// The type of the window.
@@ -425,10 +424,13 @@ namespace Catel.Services
             var window = ViewHelper.ConstructViewWithViewModel(windowType, data);
 
 #if NET
-            var activeWindow = GetActiveWindow();
-            if (window != activeWindow)
+            if (isModal)
             {
-                PropertyHelper.TrySetPropertyValue(window, "Owner", activeWindow);
+                var activeWindow = GetActiveWindow();
+                if (window != activeWindow)
+                {
+                    PropertyHelper.TrySetPropertyValue(window, "Owner", activeWindow, false);
+                }
             }
 #endif
 
@@ -460,14 +462,7 @@ namespace Catel.Services
                 PropertyHelper.TryGetPropertyValue(window, "DialogResult", out dialogResult);
 
                 completedProc(this, new UICompletedEventArgs(data, isModal ? dialogResult : null));
-#if SILVERLIGHT     
-                if (window is ChildWindow)
-                {
-                    // Due to a bug in the latest version of the Silverlight toolkit, set parent to enabled again
-                    // TODO: After every toolkit release, check if this code can be removed
-                    Application.Current.RootVisual.SetValue(Control.IsEnabledProperty, true);
-                }
-#endif
+
                 dynamicEventListener.EventOccurred -= closed;
                 dynamicEventListener.UnsubscribeFromEvent();
             };
@@ -513,10 +508,7 @@ namespace Catel.Services
             var showMethodInfo = window.GetType().GetMethodEx("Show");
             if (showMethodInfo == null)
             {
-                var error = string.Format("Method 'Show' not found on '{0}', cannot show the window", window.GetType().Name);
-                Log.Error(error);
-
-                throw new NotSupportedException(error);
+                throw Log.ErrorAndCreateException<NotSupportedException>("Method 'Show' not found on '{0}', cannot show the window", window.GetType().Name);
             }
 
             window.Dispatcher.InvokeIfRequired(() => showMethodInfo.Invoke(window, null));

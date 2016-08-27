@@ -10,6 +10,7 @@ namespace Catel.Collections
     using System.Collections;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Linq;
     using Logging;
 
     /// <summary>
@@ -197,14 +198,14 @@ namespace Catel.Collections
         }
 
         /// <summary>
-        /// Add an range of items to the specified <see cref="ObservableCollection{T}"/>.
+        /// Add an range of items to the specified <see cref="ICollection{T}"/>.
         /// </summary>
-        /// <typeparam name="T">Type of items within the observable collection.</typeparam>
-        /// <param name="collection">The <see cref="ObservableCollection{T}"/>.</param>
+        /// <typeparam name="T">Type of items within the collection.</typeparam>
+        /// <param name="collection">The collection.</param>
         /// <param name="range">An range of items.</param>
         /// <exception cref="ArgumentNullException">The <paramref name="collection"/> is <c>null</c>.</exception>
         /// <exception cref="ArgumentNullException">The <paramref name="range"/> is <c>null</c>.</exception>
-        public static void AddRange<T>(this ObservableCollection<T> collection, IEnumerable<T> range)
+        public static void AddRange<T>(this ICollection<T> collection, IEnumerable<T> range)
         {
             Argument.IsNotNull("collection", collection);
             Argument.IsNotNull("range", range);
@@ -217,14 +218,14 @@ namespace Catel.Collections
 
         /// <summary>
         /// Replaces the whole range of the specified <paramref name="collection"/>. This is done by internally
-        /// calling <see cref="Collection{T}.Clear"/> and finally <see cref="AddRange{T}"/>.
+        /// calling <see cref="ICollection{T}.Clear"/> and finally <c>AddRange{T}</c>.
         /// </summary>
-        /// <typeparam name="T">Type of items within the observable collection.</typeparam>
+        /// <typeparam name="T">Type of items within the collection.</typeparam>
         /// <param name="collection">The collection.</param>
         /// <param name="range">The range of items to add to the observable collection.</param>
         /// <exception cref="ArgumentNullException">The <paramref name="collection"/> is <c>null</c>.</exception>
         /// <exception cref="ArgumentNullException">The <paramref name="range"/> is <c>null</c>.</exception>
-        public static void ReplaceRange<T>(this ObservableCollection<T> collection, IEnumerable<T> range)
+        public static void ReplaceRange<T>(this ICollection<T> collection, IEnumerable<T> range)
         {
             Argument.IsNotNull("collection", collection);
             Argument.IsNotNull("range", range);
@@ -306,6 +307,29 @@ namespace Catel.Collections
             return new ReadOnlyCollection<T>(collection);
         }
 #endif
+
+        /// <summary>
+        /// Converts the collection to an array.
+        /// </summary>
+        /// <param name="collection">The collection.</param>
+        /// <param name="elementType">Type of the element.</param>
+        /// <returns>Array.</returns>
+        public static Array ToArray(this IEnumerable collection, Type elementType)
+        {
+            Argument.IsNotNull("elementType", elementType);
+
+            var internalList = new List<object>(collection != null ? collection.Cast<object>() : new object[] { });
+            var array = Array.CreateInstance(elementType, internalList.Count);
+
+            var index = 0;
+
+            foreach (var item in internalList)
+            {
+                array.SetValue(item, index++);
+            }
+
+            return array;
+        }
 
         /// <summary>
         /// Synchronizes the collection by adding / removing items that are in the new set.

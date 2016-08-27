@@ -43,30 +43,6 @@ namespace Catel.Windows.Controls
         /// Load all tabs when any of the tabs is used for the first time.
         /// </summary>
         EagerLoadingOnFirstUse,
-
-        /// <summary>
-        /// Obsolete, use <see cref="LazyLoading"/> instead.
-        /// </summary>
-        [ObsoleteEx(ReplacementTypeOrMember = "LazyLoading", TreatAsErrorFromVersion = "4.0", RemoveInVersion = "5.0")]
-        Single = LazyLoading,
-
-        /// <summary>
-        /// Obsolete, use <see cref="LazyLoadingUnloadOthers"/> instead.
-        /// </summary>
-        [ObsoleteEx(ReplacementTypeOrMember = "LazyLoadingUnloadOthers", TreatAsErrorFromVersion = "4.0", RemoveInVersion = "5.0")]
-        SingleUnloadOthers = LazyLoadingUnloadOthers,
-
-        /// <summary>
-        /// Obsolete, use <see cref="EagerLoading"/> instead.
-        /// </summary>
-        [ObsoleteEx(ReplacementTypeOrMember = "EagerLoading", TreatAsErrorFromVersion = "4.0", RemoveInVersion = "5.0")]
-        AllOnStartUp = EagerLoading,
-
-        /// <summary>
-        /// Obsolete, use <see cref="EagerLoadingOnFirstUse"/> instead.
-        /// </summary>
-        [ObsoleteEx(ReplacementTypeOrMember = "EagerLoadingOnFirstUse", TreatAsErrorFromVersion = "4.0", RemoveInVersion = "5.0")]
-        AllOnFirstUse = EagerLoadingOnFirstUse
     }
 
     /// <summary>
@@ -130,9 +106,6 @@ namespace Catel.Windows.Controls
     /// <summary>
     /// TabControl that will not remove the tab items from the visual tree. This way, views can be re-used.
     /// </summary>
-    /// <remarks>
-    /// This code was originally found at http://eric.burke.name/dotnetmania/2009/04/26/22.09.28.
-    /// </remarks>
     [TemplatePart(Name = "PART_ItemsHolder", Type = typeof(Panel))]
     public class TabControl : System.Windows.Controls.TabControl
     {
@@ -159,10 +132,6 @@ namespace Catel.Windows.Controls
             // this is necessary so that we get the initial databound selected item
             ItemContainerGenerator.StatusChanged += OnItemContainerGeneratorStatusChanged;
             Loaded += OnTabControlLoaded;
-
-#if SL5
-            DefaultStyleKey = typeof (TabControl);
-#endif
 
             this.SubscribeToDependencyProperty("SelectedItem", OnSelectedItemChanged);
         }
@@ -313,7 +282,7 @@ namespace Catel.Windows.Controls
                 }
             }
 
-            var loadAllItems = (LoadTabItems == LoadTabItemsBehavior.AllOnStartUp) || (IsLoaded && !IsLazyLoading);
+            var loadAllItems = (LoadTabItems == LoadTabItemsBehavior.EagerLoading) || (IsLoaded && !IsLazyLoading);
             if (loadAllItems)
             {
                 foreach (ContentPresenter child in _itemsHolder.Children)

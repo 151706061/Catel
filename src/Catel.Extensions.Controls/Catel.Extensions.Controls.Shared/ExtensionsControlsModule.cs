@@ -22,12 +22,8 @@ namespace Catel
         /// <param name="serviceLocator">The service locator.</param>
         public void Initialize(IServiceLocator serviceLocator)
         {
-            Argument.IsNotNull(() => serviceLocator);
+            Argument.IsNotNull("serviceLocator", serviceLocator);
 
-#if NET
-            var viewModelLocator = serviceLocator.ResolveType<IViewModelLocator>();
-            viewModelLocator.Register(typeof(TraceOutputControl), typeof(TraceOutputViewModel));
-#endif
         }
     }
 }

@@ -1,16 +1,13 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="CollectionHelper.cs" company="Catel development team">
-//   Copyright (c) 2008 - 2015 Catel development team. All rights reserved.
+//   Copyright (c) 2008 - 2016 Catel development team. All rights reserved.
 // </copyright>
-// <summary>
-//   Collection helper class.
-// </summary>
 // --------------------------------------------------------------------------------------------------------------------
+
 
 namespace Catel.Collections
 {
     using System.Collections;
-    using System.Runtime.InteropServices;
 
     /// <summary>
     /// Collection helper class.
@@ -27,6 +24,11 @@ namespace Catel.Collections
         /// </returns>
         public static bool IsEqualTo(IEnumerable listA, IEnumerable listB)
         {
+            if (ReferenceEquals(listA, listB))
+            {
+                return true;
+            }
+
             if (listA == listB)
             {
                 return true;
@@ -35,11 +37,6 @@ namespace Catel.Collections
             if ((listA == null) || (listB == null))
             {
                 return false;
-            }
-
-            if (ReferenceEquals(listA, listB))
-            {
-                return true;
             }
 
             var enumeratorA = listA.GetEnumerator();

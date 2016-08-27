@@ -10,6 +10,7 @@ namespace Catel.Runtime.Serialization
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.IO;
     using Catel.ApiCop.Rules;
     using Catel.Logging;
@@ -104,7 +105,7 @@ namespace Catel.Runtime.Serialization
             var serializerModifiers = SerializationManager.GetSerializerModifiers(context.ModelType);
 
             Log.Debug("Using '{0}' serializer modifiers to deserialize type '{1}'", serializerModifiers.Length,
-                context.ModelType.GetSafeFullName());
+                context.ModelTypeName);
 
             var serializingEventArgs = new SerializationEventArgs(context);
 
@@ -207,7 +208,12 @@ namespace Catel.Runtime.Serialization
         protected virtual void SerializeMembers(ISerializationContext<TSerializationContext> context, List<MemberValue> membersToSerialize)
         {
             ApiCop.UpdateRule<InitializationApiCopRule>("SerializerBase.WarmupAtStartup",
-                x => x.SetInitializationMode(InitializationMode.Lazy, GetType().GetSafeFullName()));
+                x => x.SetInitializationMode(InitializationMode.Lazy, GetType().GetSafeFullName(false)));
+
+            if (membersToSerialize.Count == 0)
+            {
+                return;
+            }
 
             var scopeName = SerializationContextHelper.GetSerializationReferenceManagerScopeName();
             using (ScopeManager<ISerializer>.GetScopeManager(scopeName, () => this))
@@ -242,12 +248,45 @@ namespace Catel.Runtime.Serialization
                         serializerModifier.SerializeMember(context, member);
                     }
 
+                    if (ShouldSerializeUsingParse(member, true))
+                    {
+                        var objectToStringValue = SerializeUsingObjectToString(context, member);
+                        if (!string.IsNullOrWhiteSpace(objectToStringValue))
+                        {
+                            member.Value = objectToStringValue;
+                        }
+                    }
+
                     SerializeMember(context, member);
 
                     AfterSerializeMember(context, member);
 
                     SerializedMember.SafeInvoke(this, memberSerializationEventArgs);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Deserializes the object using the <c>Parse(string, IFormatProvider)</c> method.
+        /// </summary>
+        /// <returns>The deserialized object.</returns>
+        protected virtual string SerializeUsingObjectToString(ISerializationContext<TSerializationContext> context, MemberValue memberValue)
+        {
+            var toStringMethod = GetObjectToStringMethod(memberValue.GetBestMemberType());
+            if (toStringMethod == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                var stringValue = (string) toStringMethod.Invoke(memberValue.Value, new object[] {CultureInfo.InvariantCulture});
+                return stringValue;
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, $"Failed to serialize type '{memberValue.GetBestMemberType().GetSafeFullName(false)}' using ToString(IFormatProvider)");
+                return null;
             }
         }
         #endregion

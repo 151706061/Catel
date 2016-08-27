@@ -4,8 +4,7 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-#if !WIN80 && !XAMARIN
-
+#if !XAMARIN
 
 namespace Catel.Windows.Interactivity
 {
@@ -67,7 +66,7 @@ namespace Catel.Windows.Interactivity
         /// <summary>
         /// Gets or sets the focus delay. If smaller than 25, no delay will be used. If larger than 5000, it will be set to 5000.
         /// <para />
-        /// The default value in WPF is <c>0</c>. The default value in Silverlight is <c>500</c>.
+        /// The default value in WPF is <c>0</c>.
         /// </summary>
         /// <value>The focus delay.</value>
         /// <example>
@@ -96,7 +95,7 @@ namespace Catel.Windows.Interactivity
                 focusDelay = 5000;
             }
 
-            Log.Debug("Starting focus on element '{0}' with a delay of '{1}' ms", AssociatedObject.GetType().GetSafeFullName(), focusDelay);
+            Log.Debug("Starting focus on element '{0}' with a delay of '{1}' ms", AssociatedObject.GetType().GetSafeFullName(false), focusDelay);
 
             if (focusDelay > 25)
             {
@@ -143,17 +142,13 @@ namespace Catel.Windows.Interactivity
                 return false;
             }
 
-#if SL5
-            System.Windows.Browser.HtmlPage.Plugin.Focus();
-#endif
-
 #if NETFX_CORE
             if (AssociatedObject.Focus(FocusState.Programmatic))
 #else
             if (AssociatedObject.Focus())
 #endif
             {
-                Log.Debug("Focused '{0}'", AssociatedObject.GetType().GetSafeFullName());
+                Log.Debug("Focused '{0}'", AssociatedObject.GetType().GetSafeFullName(false));
 
                 var textBox = AssociatedObject as TextBox;
                 if (textBox != null)
@@ -164,7 +159,7 @@ namespace Catel.Windows.Interactivity
                 return true;
             }
 
-            Log.Debug("Failed to focus '{0}'", AssociatedObject.GetType().GetSafeFullName());
+            Log.Debug("Failed to focus '{0}'", AssociatedObject.GetType().GetSafeFullName(false));
 
             return false;
         }

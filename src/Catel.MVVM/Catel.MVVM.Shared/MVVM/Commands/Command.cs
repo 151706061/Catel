@@ -16,6 +16,7 @@ namespace Catel.MVVM
     using Services;
 
     using IoC;
+    using Logging;
     using Threading;
 
     /// <summary>
@@ -54,6 +55,8 @@ namespace Catel.MVVM
     public class Command<TExecuteParameter, TCanExecuteParameter> : CommandBase, ICatelCommand<TExecuteParameter, TCanExecuteParameter>
     {
         #region Fields
+        private static readonly ILog Log = LogManager.GetCurrentClassLogger();
+
         private Func<TCanExecuteParameter, bool> _canExecuteWithParameter;
         private Func<bool> _canExecuteWithoutParameter;
         private Action<TExecuteParameter> _executeWithParameter;
@@ -246,7 +249,7 @@ namespace Catel.MVVM
         /// </summary>
         /// <param name="parameter">Data used by the command.  If the command does not require data to be passed, this object can be set to null.</param>
         /// <param name="ignoreCanExecuteCheck">if set to <c>true</c>, the check on <see cref="CanExecute()"/> will be used before actually executing the action.</param>
-        protected virtual void Execute(TExecuteParameter parameter, bool ignoreCanExecuteCheck)
+        protected virtual async void Execute(TExecuteParameter parameter, bool ignoreCanExecuteCheck)
         {
             // Double check whether execution is allowed, some controls directly call Execute
             if (!ignoreCanExecuteCheck && !CanExecute(parameter))
@@ -257,12 +260,12 @@ namespace Catel.MVVM
             if (_executeWithParameter != null)
             {
                 _executeWithParameter(parameter);
-                RaiseExecuted(parameter);
+                await RaiseExecutedAsync(parameter);
             }
             else if (_executeWithoutParameter != null)
             {
                 _executeWithoutParameter();
-                RaiseExecuted(parameter);
+                await RaiseExecutedAsync(parameter);
             }
 
             RaiseCanExecuteChanged();
@@ -273,17 +276,17 @@ namespace Catel.MVVM
         /// </summary>
         public virtual void RaiseCanExecuteChanged()
         {
-            AutoDispatchIfRequiredAsync(async () => CanExecuteChanged.SafeInvoke(this));
-        }
-
-        /// <summary>
-        /// Raises the <see cref="Executed"/> event.
-        /// </summary>
-        /// <param name="parameter">The parameter.</param>
-        [ObsoleteEx(ReplacementTypeOrMember = "RaiseExecutedAsync", TreatAsErrorFromVersion = "4.2", RemoveInVersion = "5.0")]
-        protected void RaiseExecuted(object parameter)
-        {
-            RaiseExecutedAsync(parameter);
+            AutoDispatchIfRequiredAsync(async () =>
+            {
+                try
+                {
+                    CanExecuteChanged.SafeInvoke(this);
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Failed to raise CanExecuteChanged");
+                }
+            });
         }
 
         /// <summary>

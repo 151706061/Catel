@@ -4,7 +4,7 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-#if NET || SL5
+#if NET
 
 namespace Catel.MVVM.Providers
 {
@@ -16,20 +16,9 @@ namespace Catel.MVVM.Providers
     using MVVM;
     using Reflection;
 
-#if SILVERLIGHT
-    using System.Windows.Controls;
-#endif
-
     /// <summary>
     /// MVVM Provider behavior implementation for a window.
     /// </summary>
-    /// <remarks>
-    /// Some parts in this class (with the instances and increments), but this is required to dynamically subscribe to
-    /// an even that we do not know the handler of on forehand. Normally, you would do this via an anynomous delegate, 
-    /// but that doesn't work so the event delegate is created via ILGenerator at runtime.
-    /// <para />
-    /// http://stackoverflow.com/questions/8122085/calling-an-instance-method-when-event-occurs/8122242#8122242.
-    /// </remarks>
     public class WindowLogic : LogicBase
     {
         #region Fields
@@ -41,11 +30,9 @@ namespace Catel.MVVM.Providers
         private bool? _closeInitiatedByViewModel;
         private bool? _closeInitiatedByViewModelResult;
 
-        private readonly DynamicEventListener _dynamicEventListener;
+        private readonly string _targetWindowClosedEventName;
 
-#if SILVERLIGHT
-        private bool _isClosed;
-#endif
+        private readonly DynamicEventListener _dynamicEventListener;
         #endregion
 
         #region Constructors
@@ -76,6 +63,8 @@ namespace Catel.MVVM.Providers
 
                 _dynamicEventListener = new DynamicEventListener(targetWindow, "Unloaded", this, "OnTargetWindowClosed");
             }
+
+            _targetWindowClosedEventName = eventName;
 
             Log.Debug("Using '{0}.{1}' event to determine window closing", targetWindowType.FullName, eventName);
         }
@@ -124,9 +113,16 @@ namespace Catel.MVVM.Providers
         /// </summary>
         /// <param name="sender">The sender.</param>
         /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        public override void OnTargetViewUnloaded(object sender, EventArgs e)
+        public override async Task OnTargetViewUnloadedAsync(object sender, EventArgs e)
         {
-            base.OnTargetViewUnloaded(sender, e);
+            await base.OnTargetViewUnloadedAsync(sender, e);
+
+            // This should only happen when the window only exposes an Unloaded event
+            var vm = ViewModel;
+            if (vm != null && !vm.IsClosed)
+            {
+                await CloseViewModelAsync(null);
+            }
 
             ViewModel = null;
         }
@@ -146,26 +142,12 @@ namespace Catel.MVVM.Providers
 
             await base.OnViewModelClosedAsync(sender, e);
 
-#if SILVERLIGHT
-            if (TargetWindow is ChildWindow)
-            {
-                // This code is implemented due to a bug in the ChildWindow of silverlight, see:
-                // http://silverlight.codeplex.com/workitem/7935
-
-                // Only handle this once
-                if (_isClosed)
-                {
-                    return;
-                }
-            }
-#endif
-
             if (_closeInitiatedByViewModelResult != null)
             {
                 bool result;
                 try
                 {
-                    result = PropertyHelper.TrySetPropertyValue(TargetWindow, "DialogResult", _closeInitiatedByViewModelResult);
+                    result = PropertyHelper.TrySetPropertyValue(TargetWindow, "DialogResult", _closeInitiatedByViewModelResult, true);
                 }
                 catch (Exception ex)
                 {
@@ -201,19 +183,6 @@ namespace Catel.MVVM.Providers
         public async void OnTargetWindowClosed()
         // ReSharper restore UnusedMember.Local
         {
-#if SILVERLIGHT
-            // This code is implemented due to a bug in the ChildWindow of silverlight, see:
-            // http://silverlight.codeplex.com/workitem/7935
-
-            // Only handle this once
-            if (_isClosed)
-            {
-                return;
-            }
-
-            _isClosed = true;
-#endif
-
             if (_closeInitiatedByViewModel == null)
             {
                 _closeInitiatedByViewModel = false;
@@ -238,10 +207,7 @@ namespace Catel.MVVM.Providers
             var closeMethod = TargetWindow.GetType().GetMethodEx("Close");
             if (closeMethod == null)
             {
-                string error = string.Format("Cannot close any window without a public 'Close()' method, implement the 'Close()' method on '{0}'", TargetWindow.GetType().Name);
-                Log.Error(error);
-
-                throw new NotSupportedException(error);
+                throw Log.ErrorAndCreateException<NotSupportedException>("Cannot close any window without a public 'Close()' method, implement the 'Close()' method on '{0}'", TargetWindow.GetType().Name);
             }
 
             closeMethod.Invoke(TargetWindow, null);

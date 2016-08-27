@@ -8,11 +8,11 @@ namespace Catel.Reflection
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
     using System.Reflection;
     using System.Threading;
     using Logging;
+    using Threading;
 
     /// <summary>
     /// Cache containing the types of an appdomain.
@@ -212,8 +212,7 @@ namespace Catel.Reflection
         #endregion
 
         /// <summary>
-        /// Gets the specified type from the loaded assemblies. This is a great way to load types without having
-        /// to know the exact version in Silverlight.
+        /// Gets the specified type from the loaded assemblies.
         /// </summary>
         /// <param name="typeName">The name of the type including namespace.</param>
         /// <param name="assemblyName">The name of the type including namespace.</param>
@@ -249,8 +248,7 @@ namespace Catel.Reflection
         }
 
         /// <summary>
-        /// Gets the specified type from the loaded assemblies. This is a great way to load types without having
-        /// to know the exact version in Silverlight.
+        /// Gets the specified type from the loaded assemblies.
         /// </summary>
         /// <param name="typeNameWithAssembly">The name of the type including namespace and assembly, formatted with the <see cref="TypeHelper.FormatType"/> method.</param>
         /// <param name="ignoreCase">A value indicating whether the case should be ignored.</param>
@@ -333,11 +331,6 @@ namespace Catel.Reflection
                 {
 #if NETFX_CORE || PCL
                     var type = Type.GetType(typeNameWithAssembly, false);
-#elif SILVERLIGHT
-                    // Due to a FileLoadException when loading types without a specific version, we need to map the assembly version here
-                    var assemblyNameWithVersion = AssemblyHelper.GetAssemblyNameWithVersion(assemblyName);
-                    var typeNameWithAssemblyNameWithVersion = TypeHelper.FormatType(assemblyNameWithVersion, typeName);
-                    var type = Type.GetType(typeNameWithAssemblyNameWithVersion, false, ignoreCase);
 #else
                     var type = Type.GetType(typeNameWithAssembly, false, ignoreCase);
 #endif
@@ -549,7 +542,7 @@ namespace Catel.Reflection
         }
 
         /// <summary>
-        /// Initializes the types in Silverlight. It does this by looping through all loaded assemblies and
+        /// Initializes the types. It does this by looping through all loaded assemblies and
         /// registering the type by type name and assembly name.
         /// <para/>
         /// The types initialized by this method are used by <see cref="object.GetType"/>.
@@ -586,20 +579,6 @@ namespace Catel.Reflection
         /// <para/>
         /// The types initialized by this method are used by <see cref="object.GetType"/>.
         /// </summary>
-        /// <param name="forceFullInitialization">If <c>true</c>, the types are initialized, even when the types are already initialized.</param>
-        /// <param name="assembly">The assembly to initialize the types from. If <c>null</c>, all assemblies will be checked.</param>
-        [ObsoleteEx(ReplacementTypeOrMember = "InitializeTypes(Assembly, bool)", TreatAsErrorFromVersion = "4.0", RemoveInVersion = "5.0")]
-        public static void InitializeTypes(bool forceFullInitialization, Assembly assembly = null)
-        {
-            InitializeTypes(assembly, forceFullInitialization);
-        }
-
-        /// <summary>
-        /// Initializes the types in the specified assembly. It does this by looping through all loaded assemblies and
-        /// registering the type by type name and assembly name.
-        /// <para/>
-        /// The types initialized by this method are used by <see cref="object.GetType"/>.
-        /// </summary>
         /// <param name="assembly">The assembly to initialize the types from. If <c>null</c>, all assemblies will be checked.</param>
         /// <param name="forceFullInitialization">If <c>true</c>, the types are initialized, even when the types are already initialized.</param>
         public static void InitializeTypes(Assembly assembly = null, bool forceFullInitialization = false)
@@ -613,7 +592,8 @@ namespace Catel.Reflection
 
             lock (_lockObject)
             {
-                if (forceFullInitialization)
+                // CTL-877 Only clear when assembly != null
+                if (forceFullInitialization && assembly == null)
                 {
                     _loadedAssemblies.Clear();
 
@@ -673,48 +653,39 @@ namespace Catel.Reflection
                     _typesWithoutAssemblyLowerCase = new Dictionary<string, string>();
                 }
 
-                var assembliesToInitialize = checkSingleAssemblyOnly ? new List<Assembly>(new[] {assembly}) : AssemblyHelper.GetLoadedAssemblies();
-                InitializeAssemblies(assembliesToInitialize);
+                var assembliesToInitialize = checkSingleAssemblyOnly ? new List<Assembly>(new[] { assembly }) : AssemblyHelper.GetLoadedAssemblies();
+                InitializeAssemblies(assembliesToInitialize, forceFullInitialization);
             }
         }
 
-        private static void InitializeAssemblies(IEnumerable<Assembly> assemblies)
+        private static void InitializeAssemblies(IEnumerable<Assembly> assemblies, bool force)
         {
             lock (_lockObject)
             {
-                var typesToAdd = new Dictionary<Assembly, HashSet<Type>>();
+                var assembliesToRetrieve = new List<Assembly>();
 
                 foreach (var assembly in assemblies)
                 {
                     var loadedAssemblyFullName = assembly.FullName;
-
-                    try
+                    if (!force && _loadedAssemblies.Contains(loadedAssemblyFullName))
                     {
-                        if (_loadedAssemblies.Contains(loadedAssemblyFullName))
-                        {
-                            continue;
-                        }
+                        continue;
+                    }
 
+                    if (!_loadedAssemblies.Contains(loadedAssemblyFullName))
+                    {
                         _loadedAssemblies.Add(loadedAssemblyFullName);
-
-                        if (ShouldIgnoreAssembly(assembly))
-                        {
-                            continue;
-                        }
-
-                        typesToAdd[assembly] = new HashSet<Type>();
-
-                        foreach (var type in AssemblyHelper.GetAllTypesSafely(assembly))
-                        {
-                            typesToAdd[assembly].Add(type);
-                        }
                     }
-                    catch (Exception ex)
+
+                    if (ShouldIgnoreAssembly(assembly))
                     {
-                        Log.Warning(ex, "Failed to get all types in assembly '{0}'", loadedAssemblyFullName);
+                        continue;
                     }
+
+                    assembliesToRetrieve.Add(assembly);
                 }
 
+                var typesToAdd = GetAssemblyTypes(assembliesToRetrieve);
                 foreach (var assemblyWithTypes in typesToAdd)
                 {
                     foreach (var type in assemblyWithTypes.Value)
@@ -738,14 +709,29 @@ namespace Catel.Reflection
 
                 if (lateLoadedAssemblies.Count > 0)
                 {
-                    InitializeAssemblies(lateLoadedAssemblies);
+                    InitializeAssemblies(lateLoadedAssemblies, false);
                 }
 #endif
             }
         }
 
+        private static Dictionary<Assembly, HashSet<Type>> GetAssemblyTypes(List<Assembly> assemblies)
+        {
+            // Multithreaded invocation
+            var types = (from assembly in assemblies
+                         select new KeyValuePair<Assembly, HashSet<Type>>(assembly, new HashSet<Type>(assembly.GetAllTypesSafely())));
+
+#if PCL
+            var results = types;
+#else
+            var results = types.AsParallel();
+#endif
+
+            return results.ToDictionary(p => p.Key, p => p.Value);
+        }
+
         private static void InitializeType(Assembly assembly, Type type)
-        {  
+        {
             if (ShouldIgnoreType(assembly, type))
             {
                 return;

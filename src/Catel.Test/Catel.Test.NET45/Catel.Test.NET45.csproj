@@ -30,6 +30,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>1591;1998</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -39,6 +40,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>1591;1998</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Castle.Core, Version=3.3.0.0, Culture=neutral, PublicKeyToken=407dd0808d44fbdc, processorArchitecture=MSIL">
@@ -54,17 +56,33 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="Microsoft.Expression.Interactions">
-      <HintPath>..\..\..\lib\Prism.4.1.0.0\lib\NET40\Microsoft.Expression.Interactions.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Practices.Prism">
-      <HintPath>..\..\..\lib\Prism.4.1.0.0\lib\NET40\Microsoft.Practices.Prism.dll</HintPath>
+    <Reference Include="Microsoft.Practices.Prism.Composition">
+      <HintPath>..\..\..\lib\Prism.Composition.5.0.0\lib\NET45\Microsoft.Practices.Prism.Composition.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Practices.Prism.Interactivity">
-      <HintPath>..\..\..\lib\Prism.4.1.0.0\lib\NET40\Microsoft.Practices.Prism.Interactivity.dll</HintPath>
+      <HintPath>..\..\..\lib\Prism.Interactivity.5.0.0\lib\NET45\Microsoft.Practices.Prism.Interactivity.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Practices.Prism.Mvvm">
+      <HintPath>..\..\..\lib\Prism.Mvvm.1.0.0\lib\net45\Microsoft.Practices.Prism.Mvvm.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Practices.Prism.Mvvm.Desktop">
+      <HintPath>..\..\..\lib\Prism.Mvvm.1.0.0\lib\net45\Microsoft.Practices.Prism.Mvvm.Desktop.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Practices.Prism.PubSubEvents">
+      <HintPath>..\..\..\lib\Prism.PubSubEvents.1.0.0\lib\portable-sl4+wp7+windows8+net40\Microsoft.Practices.Prism.PubSubEvents.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Practices.Prism.SharedInterfaces">
+      <HintPath>..\..\..\lib\Prism.Mvvm.1.0.0\lib\net45\Microsoft.Practices.Prism.SharedInterfaces.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Practices.ServiceLocation">
-      <HintPath>..\..\..\lib\CommonServiceLocator.1.0\lib\NET35\Microsoft.Practices.ServiceLocation.dll</HintPath>
+      <HintPath>..\..\..\lib\CommonServiceLocator.1.2\lib\portable-windows8+net40+sl5+windowsphone8\Microsoft.Practices.ServiceLocation.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Web.XmlTransform">
       <HintPath>..\..\..\lib\Microsoft.Web.Xdt.2.1.1\lib\net40\Microsoft.Web.XmlTransform.dll</HintPath>
@@ -79,17 +97,17 @@
       <HintPath>..\..\..\lib\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="NuGet.Core, Version=2.8.60318.667, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\lib\NuGet.Core.2.8.5\lib\net40-Client\NuGet.Core.dll</HintPath>
+    <Reference Include="NuGet.Core">
+      <HintPath>..\..\..\lib\NuGet.Core.2.8.6\lib\net40-Client\NuGet.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="nunit.framework, Version=2.6.4.14350, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\lib\NUnit.2.6.4\lib\nunit.framework.dll</HintPath>
     </Reference>
-    <Reference Include="Obsolete">
-      <HintPath>..\..\..\lib\Obsolete.Fody.4.0.0\Lib\portable-net4+sl5+wp8+win8+wpa81+MonoAndroid16+MonoTouch40\Obsolete.dll</HintPath>
+    <Reference Include="Obsolete, Version=4.0.3.0, Culture=neutral, PublicKeyToken=1ca091877d12ca03, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\lib\Obsolete.Fody.4.0.3\lib\dotnet\Obsolete.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="PresentationCore" />
@@ -105,10 +123,6 @@
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.ServiceModel.Activation" />
     <Reference Include="System.Web" />
-    <Reference Include="System.Windows.Interactivity, Version=4.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\lib\NET45\Interactivity\System.Windows.Interactivity.dll</HintPath>
-    </Reference>
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
@@ -131,6 +145,7 @@
       <Link>App.xaml.cs</Link>
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ModuleInitializer.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Catel.Core\Catel.Core.NET45\Catel.Core.NET45.csproj">
@@ -153,21 +168,9 @@
       <Project>{c30b4f98-084a-4fc4-910e-2deae3505ad9}</Project>
       <Name>Catel.Extensions.FluentValidation.NET45</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\Catel.Extensions.Interception\Catel.Extensions.Interception.NET45\Catel.Extensions.Interception.NET45.csproj">
-      <Project>{6bcc1122-5f7e-4322-9d18-c28e86b7f459}</Project>
-      <Name>Catel.Extensions.Interception.NET45</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Catel.Extensions.Memento\Catel.Extensions.Memento.NET45\Catel.Extensions.Memento.NET45.csproj">
-      <Project>{78940ad6-6cbe-4a64-b36e-8595633034fa}</Project>
-      <Name>Catel.Extensions.Memento.NET45</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Catel.Extensions.Prism\Catel.Extensions.Prism4\Catel.Extensions.Prism4.NET45\Catel.Extensions.Prism4.NET45.csproj">
-      <Project>{1dac9a4b-2572-446a-99b8-9e86c1d9254b}</Project>
-      <Name>Catel.Extensions.Prism4.NET45</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Catel.Extensions.Wcf.Server\Catel.Extensions.Wcf.Server.NET45\Catel.Extensions.Wcf.Server.NET45.csproj">
-      <Project>{9d5b9051-9102-4225-b89c-be0e665e2ad3}</Project>
-      <Name>Catel.Extensions.Wcf.Server.NET45</Name>
+    <ProjectReference Include="..\..\Catel.Extensions.Prism\Catel.Extensions.Prism5\Catel.Extensions.Prism5.NET45\Catel.Extensions.Prism5.NET45.csproj">
+      <Project>{3604ff18-b278-4508-aa83-88d34f6c026d}</Project>
+      <Name>Catel.Extensions.Prism5.NET45</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Catel.MVVM\Catel.MVVM.NET45\Catel.MVVM.NET45.csproj">
       <Project>{bedeb2cb-51ab-4af6-85f9-6a596b4603bb}</Project>
@@ -228,11 +231,15 @@
   </Target>
   <Target Name="AfterBuild">
   </Target>
-  <Import Project="..\..\..\lib\Fody.1.29.0\build\Fody.targets" Condition="Exists('..\..\..\lib\Fody.1.29.0\build\Fody.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\..\..\lib\Fody.1.29.0\build\Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\lib\Fody.1.29.0\build\Fody.targets'))" />
+    <Error Condition="!Exists('..\..\..\lib\Obsolete.Fody.4.0.3\build\dotnet\Obsolete.Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\lib\Obsolete.Fody.4.0.3\build\dotnet\Obsolete.Fody.targets'))" />
+    <Error Condition="!Exists('..\..\..\lib\ModuleInit.Fody.1.5.8.0\build\dotnet\ModuleInit.Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\lib\ModuleInit.Fody.1.5.8.0\build\dotnet\ModuleInit.Fody.targets'))" />
+    <Error Condition="!Exists('..\..\..\lib\Fody.1.29.4\build\dotnet\Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\lib\Fody.1.29.4\build\dotnet\Fody.targets'))" />
   </Target>
+  <Import Project="..\..\..\lib\Obsolete.Fody.4.0.3\build\dotnet\Obsolete.Fody.targets" Condition="Exists('..\..\..\lib\Obsolete.Fody.4.0.3\build\dotnet\Obsolete.Fody.targets')" />
+  <Import Project="..\..\..\lib\ModuleInit.Fody.1.5.8.0\build\dotnet\ModuleInit.Fody.targets" Condition="Exists('..\..\..\lib\ModuleInit.Fody.1.5.8.0\build\dotnet\ModuleInit.Fody.targets')" />
+  <Import Project="..\..\..\lib\Fody.1.29.4\build\dotnet\Fody.targets" Condition="Exists('..\..\..\lib\Fody.1.29.4\build\dotnet\Fody.targets')" />
 </Project>

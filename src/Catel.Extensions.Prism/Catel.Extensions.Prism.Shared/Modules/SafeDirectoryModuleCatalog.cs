@@ -14,9 +14,14 @@ namespace Catel.Modules
     using System.Reflection;
     using System.Security.Policy;
     using Catel.Logging;
+#if PRISM6
+    using Prism.Modularity;
+#else
     using Microsoft.Practices.Prism;
     using Microsoft.Practices.Prism.Modularity;
+#endif
     using System;
+    using System.Collections.ObjectModel;
 
     /// <summary>
     /// Safe implementation of the <see cref="DirectoryModuleCatalog"/> which does not crash when
@@ -43,9 +48,7 @@ namespace Catel.Modules
 
             if (!Directory.Exists(ModulePath))
             {
-                var error = string.Format("Directory '{0}' not found", ModulePath);
-                Log.Error(error);
-                throw new InvalidOperationException(error);
+                throw Log.ErrorAndCreateException<InvalidOperationException>("Directory '{0}' not found", ModulePath);
             }
 
             var childDomain = BuildChildDomain(AppDomain.CurrentDomain);

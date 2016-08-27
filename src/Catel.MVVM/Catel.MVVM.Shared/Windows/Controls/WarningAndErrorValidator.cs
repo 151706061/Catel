@@ -87,7 +87,7 @@ namespace Catel.Windows.Controls
         private readonly Dictionary<object, ValidationData> _objectValidation = new Dictionary<object, ValidationData>();
         private readonly object _objectValidationLock = new object();
 
-#if NET || SL5
+#if NET
         private InfoBarMessageControl _infoBarMessageControl;
 #endif
         #endregion
@@ -132,7 +132,7 @@ namespace Catel.Windows.Controls
         public static readonly DependencyProperty SourceProperty = DependencyProperty.Register("Source", typeof(object), typeof(WarningAndErrorValidator),
             new PropertyMetadata(null, (sender, e) => ((WarningAndErrorValidator)sender).UpdateSource(e.OldValue, e.NewValue)));
 
-#if NET || SL5
+#if NET
         /// <summary>
         /// Gets or sets a value indicating whether this warning and error validator should automatically register to the first <see cref="InfoBarMessageControl"/> it can find.
         /// </summary>
@@ -194,7 +194,7 @@ namespace Catel.Windows.Controls
         /// </summary>
         private void Initialize()
         {
-#if NET || SL5
+#if NET
             if (AutomaticallyRegisterToInfoBarMessageControl)
             {
                 //_infoBarMessageControl = this.FindLogicalAncestorByType<InfoBarMessageControl>();
@@ -239,7 +239,7 @@ namespace Catel.Windows.Controls
 
             _objectValidation.Clear();
 
-#if NET || SL5
+#if NET
             if (_infoBarMessageControl != null)
             {
                 _infoBarMessageControl.UnsubscribeWarningAndErrorValidator(this);
@@ -758,7 +758,7 @@ namespace Catel.Windows.Controls
         /// <param name="type">The type.</param>
         private void RaiseBusinessValidationWarningOrError(object value, string message, ValidationEventAction action, ValidationType type)
         {
-            Validation.SafeInvoke(this, new ValidationEventArgs(value, message, action, type));
+            Validation.SafeInvoke(this, () => new ValidationEventArgs(value, message, action, type));
         }
 
         /// <summary>
@@ -895,16 +895,16 @@ namespace Catel.Windows.Controls
             var validationData = new ValidationData(ParentEnumerable);
 
             validationData.FieldWarnings = new ObservableCollection<FieldWarningOrErrorInfo>();
-            validationData.FieldWarnings.AddRange(FieldWarnings);
+            ((ICollection<FieldWarningOrErrorInfo>)validationData.FieldWarnings).AddRange(FieldWarnings);
 
             validationData.BusinessWarnings = new ObservableCollection<BusinessWarningOrErrorInfo>();
-            validationData.BusinessWarnings.AddRange(BusinessWarnings);
+            ((ICollection<BusinessWarningOrErrorInfo>)validationData.BusinessWarnings).AddRange(BusinessWarnings);
 
             validationData.FieldErrors = new ObservableCollection<FieldWarningOrErrorInfo>();
-            validationData.FieldErrors.AddRange(FieldErrors);
+            ((ICollection<FieldWarningOrErrorInfo>)validationData.FieldErrors).AddRange(FieldErrors);
 
             validationData.BusinessErrors = new ObservableCollection<BusinessWarningOrErrorInfo>();
-            validationData.BusinessErrors.AddRange(BusinessErrors);
+            ((ICollection<BusinessWarningOrErrorInfo>)validationData.BusinessErrors).AddRange(BusinessErrors);
 
             return validationData;
         }

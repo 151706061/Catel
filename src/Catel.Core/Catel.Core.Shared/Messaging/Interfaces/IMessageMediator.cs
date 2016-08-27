@@ -102,19 +102,10 @@ namespace Catel.Messaging
         /// <param name="message">The message parameter.</param>
         /// <param name="tag">The message tag.</param>
         /// <returns>
-        /// 	<c>true</c> if any handlers were invoked; otherwise <c>false</c>.
+        /// <c>true</c> if any handlers were invoked; otherwise <c>false</c>.
         /// </returns>
         /// <exception cref="ArgumentNullException">The <paramref name="message"/> is <c>null</c>.</exception>
         bool SendMessage<TMessage>(TMessage message, object tag = null);
-
-        /// <summary>
-        /// Broadcasts a message to all message targets for a given message tag and passes a parameter, the message targets are all called asynchronously.
-        /// </summary>
-        /// <typeparam name="TMessage">The type of the message.</typeparam>
-        /// <param name="message">The message parameter.</param>
-        /// <param name="tag">The message tag.</param>
-        /// <exception cref="ArgumentNullException">The <paramref name="message"/> is <c>null</c>.</exception>
-        void SendMessageAsync<TMessage>(TMessage message, object tag = null);
 
         /// <summary>
         /// Cleans up the list of registered handlers. All handlers that are no longer alive

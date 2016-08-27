@@ -7,7 +7,6 @@
 namespace Catel
 {
     using System;
-    using System.Collections.Generic;
     using System.Linq.Expressions;
     using System.Reflection;
     using Logging;
@@ -22,6 +21,19 @@ namespace Catel
         /// The <see cref="ILog">log</see> object.
         /// </summary>
         private static readonly ILog Log = LogManager.GetCurrentClassLogger();
+
+        /// <summary>
+        /// Gets the name of the property from the expression.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the t source.</typeparam>
+        /// <typeparam name="TProperty">The type of the property.</typeparam>
+        /// <param name="propertyExpression">The property expression.</param>
+        /// <returns>The name of the property parsed from the expression or <c>null</c> if the property cannot be found.</returns>
+        /// <exception cref="ArgumentNullException">The <paramref name="propertyExpression" /> is <c>null</c>.</exception>
+        public static string GetPropertyName<TSource, TProperty>(Expression<Func<TSource, TProperty>> propertyExpression)
+        {
+            return PropertyHelper.GetPropertyName(propertyExpression);
+        }
 
         /// <summary>
         /// Gets the name of the property from the expression.
@@ -66,34 +78,46 @@ namespace Catel
             var memberExpression = body.Expression as MemberExpression;
             if (memberExpression != null)
             {
-                var fieldInfo = memberExpression.Member as FieldInfo;
-                if (fieldInfo != null)
-                {
-                    var ownerConstantExpression = memberExpression.Expression as ConstantExpression;
-                    if (ownerConstantExpression != null)
-                    {
-                        return fieldInfo.GetValue(ownerConstantExpression.Value);
-                    }
-                }
-
-                // Fallback but is a bit slower
-                var lamdaExpression = Expression.Lambda(memberExpression);
-                return lamdaExpression.Compile().DynamicInvoke();
+                var resolvedMemberExpression = ResolveMemberExpression(memberExpression);
+                return resolvedMemberExpression;
             }
 
             return null;
         }
 
-        private static ParameterExpression GetParameterExpression(Expression expression)
+        private static object ResolveMemberExpression(MemberExpression memberExpression)
         {
-
-
-            if (expression.NodeType == ExpressionType.Parameter)
+            var fieldInfo = memberExpression.Member as FieldInfo;
+            if (fieldInfo != null)
             {
-                return (ParameterExpression)expression;
+                var ownerConstantExpression = memberExpression.Expression as ConstantExpression;
+                if (ownerConstantExpression != null)
+                {
+                    return fieldInfo.GetValue(ownerConstantExpression.Value);
+                }
             }
 
-            return null;
+            var propertyInfo = memberExpression.Member as PropertyInfo;
+            if (propertyInfo != null)
+            {
+                var ownerConstantExpression = memberExpression.Expression as ConstantExpression;
+                if (ownerConstantExpression != null)
+                {
+                    return propertyInfo.GetValue(ownerConstantExpression.Value, null);
+                }
+
+                // Note: this is support for .NET native
+                var subMemberExpression = memberExpression.Expression as MemberExpression;
+                if (subMemberExpression != null)
+                {
+                    var resolvedMemberExpression = ResolveMemberExpression(subMemberExpression);
+                    return propertyInfo.GetValue(resolvedMemberExpression, null);
+                }
+            }
+
+            // Fallback but is a bit slower
+            var lamdaExpression = Expression.Lambda(memberExpression);
+            return lamdaExpression.Compile().DynamicInvoke();
         }
 
         private static Expression GetExpressionToHandle<TProperty>(Expression<Func<TProperty>> propertyExpression)

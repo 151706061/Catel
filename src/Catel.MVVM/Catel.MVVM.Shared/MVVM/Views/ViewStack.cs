@@ -200,8 +200,6 @@ namespace Catel.MVVM.Views
             {
                 _parentViewStack.ViewStackLoaded -= OnParentViewStackLoaded;
             }
-
-            UnsubscribeLayoutUpdated();
         }
 
         /// <summary>
@@ -284,58 +282,25 @@ namespace Catel.MVVM.Views
             return false;
         }
 
-        private void SubscribeLayoutUpdated()
-        {
-#if SILVERLIGHT
-            _viewInfo.LayoutUpdated += OnViewLayoutUpdated;
-
-            var view = _viewInfo.View;
-            if (view != null)
-            {
-                view.Dispatch(() => ((FrameworkElement)view).InvalidateMeasure());
-            }
-#endif
-        }
-
-        private void UnsubscribeLayoutUpdated()
-        {
-#if SILVERLIGHT
-            _viewInfo.LayoutUpdated -= OnViewLayoutUpdated;
-#endif
-        }
-
-        private void OnViewLayoutUpdated(object sender, EventArgs e)
-        {
-            UnsubscribeLayoutUpdated();
-
-            RaiseViewLoaded();
-        }
-
         private void RaiseViewLoaded()
         {
-            ViewLoaded.SafeInvoke(this, new ViewStackPartEventArgs(_viewInfo.View));
+            ViewLoaded.SafeInvoke(this, () => new ViewStackPartEventArgs(_viewInfo.View));
 
             MarkAsLoaded();
         }
 
         private void RaiseViewUnloaded()
         {
-            ViewUnloaded.SafeInvoke(this, new ViewStackPartEventArgs(_viewInfo.View));
+            ViewUnloaded.SafeInvoke(this, () => new ViewStackPartEventArgs(_viewInfo.View));
         }
 
         private void OnViewLoaded(object sender, EventArgs e)
         {
-#if SILVERLIGHT
-            SubscribeLayoutUpdated();
-#else
             RaiseViewLoaded();
-#endif
         }
 
         private void OnViewUnloaded(object sender, EventArgs e)
         {
-            UnsubscribeLayoutUpdated();
-
             MarkAsUnloaded();
 
             RaiseViewUnloaded();

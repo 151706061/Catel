@@ -60,13 +60,14 @@ namespace Catel.MVVM
                 serviceLocator.RegisterTypeIfNotYetRegistered<IViewModelLocator, ViewModelLocator>();
                 serviceLocator.RegisterTypeIfNotYetRegistered<IViewModelFactory, ViewModelFactory>();
                 serviceLocator.RegisterTypeIfNotYetRegistered<INavigationService, NavigationService>();
+                serviceLocator.RegisterTypeIfNotYetRegistered<INavigationRootService, NavigationRootService>();
 
                 serviceLocator.RegisterTypeIfNotYetRegistered<IPleaseWaitService, PleaseWaitService>();
                 serviceLocator.RegisterTypeIfNotYetRegistered<IAccelerometerService, AccelerometerService>();
                 serviceLocator.RegisterTypeIfNotYetRegistered<ILocationService, LocationService>();
                 serviceLocator.RegisterTypeIfNotYetRegistered<IVibrateService, VibrateService>();
 
-#if !NET && !SL5
+#if !NET
                 serviceLocator.RegisterTypeIfNotYetRegistered<ICameraService, CameraService>();
 #endif
 
@@ -80,7 +81,7 @@ namespace Catel.MVVM
                 serviceLocator.RegisterTypeIfNotYetRegistered<ISelectDirectoryService, SelectDirectoryService>();
 #endif
 
-#if NET || SL5
+#if NET
                 serviceLocator.RegisterTypeIfNotYetRegistered<IOpenFileService, OpenFileService>();
                 serviceLocator.RegisterTypeIfNotYetRegistered<ISaveFileService, SaveFileService>();
                 serviceLocator.RegisterTypeIfNotYetRegistered<IUIVisualizerService, UIVisualizerService>();
@@ -89,8 +90,8 @@ namespace Catel.MVVM
                 serviceLocator.RegisterTypeIfNotYetRegistered<ISplashScreenService, SplashScreenService>(RegistrationType.Transient);
 #endif
 
-#if (WINDOWS_PHONE && SILVERLIGHT) || XAMARIN
-                serviceLocator.RegisterTypeIfNotYetRegistered<IPhoneService, PhoneService>();
+#if XAMARIN_FORMS
+                serviceLocator.RegisterTypeIfNotYetRegistered<IUIVisualizerService, UIVisualizerService>();
 #endif
 
                 Log.Debug("Registered default service implementations for IoC container");

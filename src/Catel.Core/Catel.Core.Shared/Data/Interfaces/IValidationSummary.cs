@@ -78,7 +78,7 @@ namespace Catel.Data
         /// Gets a collection of business rule warnings.
         /// </summary>
         /// <value>The business warnings.</value>
-        ReadOnlyCollection<IBusinessRuleValidationResult> BusinessWarnings { get; }
+        ReadOnlyCollection<IBusinessRuleValidationResult> BusinessRuleWarnings { get; }
 
         /// <summary>
         /// Gets a collection of business rule errors.

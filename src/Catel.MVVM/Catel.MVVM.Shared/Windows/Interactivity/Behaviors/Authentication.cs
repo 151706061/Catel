@@ -4,7 +4,7 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-#if !WIN80 && !XAMARIN
+#if !XAMARIN
 
 namespace Catel.Windows.Interactivity
 {
@@ -88,7 +88,7 @@ namespace Catel.Windows.Interactivity
 
             if (_authenticationProvider == null)
             {
-                Log.ErrorAndThrowException<NotSupportedException>("No IAuthenticationProvider is registered, cannot use the Authentication behavior without an IAuthenticationProvider");
+                throw Log.ErrorAndCreateException<NotSupportedException>("No IAuthenticationProvider is registered, cannot use the Authentication behavior without an IAuthenticationProvider");
             }
         }
         #endregion
@@ -153,7 +153,7 @@ namespace Catel.Windows.Interactivity
                         break;
 
                     case AuthenticationAction.Disable:
-#if SILVERLIGHT || NETFX_CORE
+#if NETFX_CORE
                         if (!(AssociatedObject is Control))
                         {
                             throw new InvalidOperationException("The AssociatedObject is not a Control instance, only AuthenticationAction.Collapse is allowed in SL, Windows Phone and WinRT");

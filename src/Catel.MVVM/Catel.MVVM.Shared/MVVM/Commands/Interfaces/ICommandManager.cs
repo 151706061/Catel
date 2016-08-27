@@ -9,9 +9,10 @@ namespace Catel.MVVM
 {
     using System;
     using System.Collections.Generic;
+    using System.Windows;
     using System.Windows.Input;
 
-#if !WINDOWS_PHONE && !XAMARIN
+#if !XAMARIN
     using InputGesture = Catel.Windows.Input.InputGesture;
 #endif
 
@@ -21,7 +22,15 @@ namespace Catel.MVVM
     /// </summary>
     public interface ICommandManager
     {
-#if !WINDOWS_PHONE && !XAMARIN
+#if !XAMARIN
+        /// <summary>
+        /// Gets or sets a value indicating whether the keyboard events are suspended.
+        /// </summary>
+        /// <value><c>true</c> if the keyboard events are suspended; otherwise, <c>false</c>.</value>
+        bool IsKeyboardEventsSuspended { get; set; }
+#endif
+
+#if !XAMARIN
         /// <summary>
         /// Creates the command inside the command manager.
         /// <para />
@@ -100,7 +109,7 @@ namespace Catel.MVVM
         /// <exception cref="ArgumentException">The <paramref name="commandName"/> is <c>null</c> or whitespace.</exception>
         ICommand GetCommand(string commandName);
 
-#if !WINDOWS_PHONE && !XAMARIN
+#if !XAMARIN
         /// <summary>
         /// Gets the original input gesture with which the command was initially created.
         /// </summary>
@@ -135,6 +144,15 @@ namespace Catel.MVVM
         /// Subscribes to keyboard events.
         /// </summary>
         void SubscribeToKeyboardEvents();
+
+#if NET
+        /// <summary>
+        /// Subscribes to keyboard events.
+        /// </summary>
+        /// <param name="view">The view.</param>
+        /// <exception cref="ArgumentNullException">The <paramref name="view"/> is <c>null</c>.</exception>
+        void SubscribeToKeyboardEvents(FrameworkElement view);
+#endif
 #endif
 
         /// <summary>

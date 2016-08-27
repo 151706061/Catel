@@ -16,6 +16,7 @@ namespace Catel.MVVM.Converters
     using System.Globalization;
     using System.Windows.Data;
     using System.Windows.Markup;
+    using Logging;
 
     /// <summary>
     /// A value converter which contains a list of IValueConverters and invokes their Convert or ConvertBack methods
@@ -30,13 +31,17 @@ namespace Catel.MVVM.Converters
     /// </summary>
     /// <remarks>
     /// Original source: http://www.codeproject.com/KB/WPF/PipingValueConverters_WPF.aspx
+    /// <para />
+    /// Original license: CPOL, compatible with the MIT license.
     /// </remarks>
     [ContentProperty("Converters")]
     public class ValueConverterGroup : IValueConverter
     {
         #region Fields
-        private readonly ObservableCollection<IValueConverter> _converters = new ObservableCollection<IValueConverter>();
-        private readonly Dictionary<IValueConverter, ValueConversionAttribute> _cachedAttributes = new Dictionary<IValueConverter, ValueConversionAttribute>();
+        private static readonly ILog Log = LogManager.GetCurrentClassLogger();
+
+        private readonly ObservableCollection<System.Windows.Data.IValueConverter> _converters = new ObservableCollection<System.Windows.Data.IValueConverter>();
+        private readonly Dictionary<System.Windows.Data.IValueConverter, ValueConversionAttribute> _cachedAttributes = new Dictionary<System.Windows.Data.IValueConverter, ValueConversionAttribute>();
         #endregion
 
         #region Constructors
@@ -53,7 +58,7 @@ namespace Catel.MVVM.Converters
         /// <summary>
         /// Returns the list of IValueConverters contained in this converter.
         /// </summary>
-        public ObservableCollection<IValueConverter> Converters
+        public ObservableCollection<System.Windows.Data.IValueConverter> Converters
         {
             get { return _converters; }
         }
@@ -73,11 +78,11 @@ namespace Catel.MVVM.Converters
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             object output = value;
-
+            
             for (int i = 0; i < Converters.Count; ++i)
             {
-                IValueConverter converter = Converters[i];
-                Type currentTargetType = GetTargetType(i, targetType, true);
+                var converter = Converters[i];
+                var currentTargetType = GetTargetType(i, targetType, true);
                 output = converter.Convert(output, currentTargetType, parameter, culture);
 
                 // If the converter returns 'DoNothing' then the binding operation should terminate.
@@ -106,8 +111,8 @@ namespace Catel.MVVM.Converters
 
             for (int i = Converters.Count - 1; i > -1; --i)
             {
-                IValueConverter converter = Converters[i];
-                Type currentTargetType = GetTargetType(i, targetType, false);
+                var converter = Converters[i];
+                var currentTargetType = GetTargetType(i, targetType, false);
                 output = converter.ConvertBack(output, currentTargetType, parameter, culture);
 
                 // When a converter returns 'DoNothing' the binding operation should terminate.
@@ -130,7 +135,7 @@ namespace Catel.MVVM.Converters
         {
             // If the current converter is not the last/first in the list, 
             // get a reference to the next/previous converter.
-            IValueConverter nextConverter = null;
+            System.Windows.Data.IValueConverter nextConverter = null;
             if (convert)
             {
                 if (converterIndex < Converters.Count - 1)
@@ -138,7 +143,7 @@ namespace Catel.MVVM.Converters
                     nextConverter = Converters[converterIndex + 1];
                     if (nextConverter == null)
                     {
-                        throw new InvalidOperationException("The Converters collection of the ValueConverterGroup contains a null reference at index: " + (converterIndex + 1));
+                        throw Log.ErrorAndCreateException<InvalidOperationException>("The Converters collection of the ValueConverterGroup contains a null reference at index: " + (converterIndex + 1));
                     }
                 }
             }
@@ -149,7 +154,7 @@ namespace Catel.MVVM.Converters
                     nextConverter = Converters[converterIndex - 1];
                     if (nextConverter == null)
                     {
-                        throw new InvalidOperationException("The Converters collection of the ValueConverterGroup contains a null reference at index: " + (converterIndex - 1));
+                        throw Log.ErrorAndCreateException<InvalidOperationException>("The Converters collection of the ValueConverterGroup contains a null reference at index: " + (converterIndex - 1));
                     }
                 }
             }
@@ -204,7 +209,7 @@ namespace Catel.MVVM.Converters
                     // Maybe it is 'beter' (more robust) to use a default ValueConversion(typeof(object), typeof(bool)) attribute.
                     if (attributes.Length != 1)
                     {
-                        throw new InvalidOperationException("All value converters added to a ValueConverterGroup must be decorated with the ValueConversionAttribute attribute exactly once.");
+                        throw Log.ErrorAndCreateException<InvalidOperationException>("All value converters added to a ValueConverterGroup must be decorated with the ValueConversionAttribute attribute exactly once.");
                     }
 
                     _cachedAttributes.Add(converter, attributes[0] as ValueConversionAttribute);

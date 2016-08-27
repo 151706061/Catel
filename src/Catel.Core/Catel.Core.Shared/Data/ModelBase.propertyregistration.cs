@@ -41,7 +41,7 @@ namespace Catel.Data
 #if !PCL && !NETFX_CORE
             if (memberExpression.Member.MemberType != MemberTypes.Property)
             {
-                throw new ArgumentException("The member type of the body of the property expression should be a property");
+                throw Log.ErrorAndCreateException<ArgumentException>("The member type of the body of the property expression should be a property");
             }
 #endif
 
@@ -82,7 +82,7 @@ namespace Catel.Data
 #if !PCL && !NETFX_CORE
             if (memberExpression.Member.MemberType != MemberTypes.Property)
             {
-                throw new ArgumentException("The member type of the body of the property expression should be a property");
+                throw Log.ErrorAndCreateException<ArgumentException>("The member type of the body of the property expression should be a property");
             }
 #endif
 
@@ -335,7 +335,8 @@ namespace Catel.Data
             var objectType = GetType();
             if ((defaultValue == null) && !type.IsNullableType())
             {
-                throw new PropertyNotNullableException(name, objectType);
+                throw Log.ErrorAndCreateException(msg => new PropertyNotNullableException(name, objectType),
+                    "Property '{0}' is not nullable, please provide a valid (not null) default value", name);
             }
 
             lock (_initializedTypesLock)
@@ -348,7 +349,7 @@ namespace Catel.Data
                             isSerializable, includeInSerialization, includeInBackup, isModelBaseProperty, isCalculatedProperty);
                         PropertyDataManager.RegisterProperty(objectType, name, propertyData);
 
-#if !WINDOWS_PHONE && !NETFX_CORE && !PCL && !NET35
+#if !NETFX_CORE && !PCL
                         // Skip validation for modelbase properties
                         if (propertyData.IsModelBaseProperty)
                         {
@@ -382,7 +383,8 @@ namespace Catel.Data
                 return false;
             }
 
-            return GetPropertyData(name).IsModelBaseProperty;
+            var propertyData = GetPropertyData(name);
+            return propertyData.IsModelBaseProperty;
         }
 
         /// <summary>
@@ -390,7 +392,8 @@ namespace Catel.Data
         /// </summary>
         /// <param name="name">Name of the property.</param>
         /// <returns>True if the property is registered, otherwise false.</returns>
-        protected internal bool IsPropertyRegistered(string name)
+        /// TODO: Try to revert to internal but is required by XAMARIN_FORMS
+        public bool IsPropertyRegistered(string name)
         {
             return IsPropertyRegistered(GetType(), name);
         }

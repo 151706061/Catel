@@ -250,7 +250,7 @@ namespace Catel.Test.Data
 
                 using (collection.SuspendChangeNotifications())
                 {
-                    collection.ReplaceRange(new [] { new TestModel() });
+                    ((ICollection<TestModel>)collection).ReplaceRange(new [] { new TestModel() });
                 }
 
                 Assert.IsFalse(itemsAdded);
@@ -298,6 +298,64 @@ namespace Catel.Test.Data
 
                 collection.Clear();
                 
+                model.FirstName = "Geert";
+
+                Assert.IsFalse(collectionItemPropertyChanged);
+            }
+
+            [TestCase]
+            public void HandlesChangesOfSuspendedFastObservableCollectionCorrectly()
+            {
+                var collection = new FastObservableCollection<TestModel>();
+
+                for (int i = 0; i < 10; i++)
+                {
+                    var randomModel = new TestModel();
+                    collection.Add(randomModel);
+                }
+
+                var wrapper = new ChangeNotificationWrapper(collection);
+
+                var collectionItemPropertyChanged = false;
+                wrapper.CollectionItemPropertyChanged += (sender, e) => collectionItemPropertyChanged = true;
+
+                var newModel = new TestModel();
+
+                using (collection.SuspendChangeNotifications())
+                {
+                    collection.Clear();
+                    collection.Add(newModel);
+                }
+
+                newModel.FirstName = "Geert";
+
+                Assert.IsTrue(collectionItemPropertyChanged);
+            }
+
+            [TestCase]
+            public void HandlesClearOfSuspendedFastObservableCollectionCorrectly()
+            {
+                var collection = new FastObservableCollection<TestModel>();
+                TestModel model = null;
+
+                for (int i = 0; i < 10; i++)
+                {
+                    var randomModel = new TestModel();
+                    collection.Add(randomModel);
+                }
+
+                model = collection[0];
+
+                var wrapper = new ChangeNotificationWrapper(collection);
+
+                var collectionItemPropertyChanged = false;
+                wrapper.CollectionItemPropertyChanged += (sender, e) => collectionItemPropertyChanged = true;
+
+                using (collection.SuspendChangeNotifications())
+                {
+                    collection.Clear();
+                }
+
                 model.FirstName = "Geert";
 
                 Assert.IsFalse(collectionItemPropertyChanged);

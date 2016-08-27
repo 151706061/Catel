@@ -32,9 +32,10 @@ namespace Catel.Data
         /// </summary>
         static DynamicModelBaseMetaObject()
         {
-            // TODO: Store GetValue and SetValue methods 
-            _getValueFastMethodInfo = typeof(ModelBase).GetMethodEx("GetValueFast", BindingFlags.Instance | BindingFlags.NonPublic);
-            _setValueFastMethodInfo = typeof(ModelBase).GetMethodEx("SetValueFast", BindingFlags.Instance | BindingFlags.NonPublic);
+            var bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic;
+
+            _getValueFastMethodInfo = typeof(ModelBase).GetMethodEx("GetValueFast", bindingFlags).MakeGenericMethod(new [] { typeof(object) });
+            _setValueFastMethodInfo = typeof(ModelBase).GetMethodEx("SetValueFast", bindingFlags);
         }
 
         /// <summary>
@@ -113,7 +114,7 @@ namespace Catel.Data
             }
 
             var modelType = model.GetType();
-            Log.Debug("Register dynamic property '{0}.{1}' of type '{2}'", modelType.GetSafeFullName(), propertyName, propertyType.GetSafeFullName());
+            Log.Debug("Register dynamic property '{0}.{1}' of type '{2}'", modelType.GetSafeFullName(false), propertyName, propertyType.GetSafeFullName(false));
 
             var registerPropertyMethodInfo = GetRegisterSimplePropertyMethodInfo(modelType);
             registerPropertyMethodInfo.Invoke(model, new object[] { propertyName, propertyType });
@@ -123,7 +124,8 @@ namespace Catel.Data
         {
             return _registerSimplePropertyCache.GetFromCacheOrFetch(modelBaseType, () =>
             {
-                var methodInfo = modelBaseType.GetMethodEx("RegisterDynamicProperty", BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.NonPublic);
+                var bindingFlags = BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.NonPublic;
+                var methodInfo = modelBaseType.GetMethodEx("RegisterDynamicProperty", bindingFlags);
                 return methodInfo;
             });
         }

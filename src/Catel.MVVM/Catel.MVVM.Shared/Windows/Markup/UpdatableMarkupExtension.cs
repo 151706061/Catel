@@ -35,6 +35,7 @@ namespace Catel.Windows.Markup
         private object _targetObject;
         private object _targetProperty;
         private bool _isFrameworkElementLoaded;
+        private IServiceProvider _serviceProvider;
         #endregion
 
         #region Constructors
@@ -68,10 +69,13 @@ namespace Catel.Windows.Markup
         /// <returns>The object value to set on the property where the extension is applied.</returns>
         public override sealed object ProvideValue(IServiceProvider serviceProvider)
         {
-#if WINDOWS_PHONE || NETFX_CORE
+#if NETFX_CORE
             _targetObject = null;
             _targetProperty = null;
+            _serviceProvider = null;
 #else
+            _serviceProvider = serviceProvider;
+
             var target = serviceProvider.GetService(typeof(IProvideValueTarget)) as IProvideValueTarget;
             if (target != null)
             {
@@ -90,7 +94,7 @@ namespace Catel.Windows.Markup
                 _targetProperty = target.TargetProperty;
 
                 FrameworkElement frameworkElement;
-#if !SILVERLIGHT && !NETFX_CORE
+#if !NETFX_CORE
                 FrameworkContentElement frameworkContentElement;
 #endif
 
@@ -103,7 +107,7 @@ namespace Catel.Windows.Markup
                     frameworkElement.Loaded += OnTargetObjectLoadedInternal;
                     frameworkElement.Unloaded += OnTargetObjectUnloadedInternal;
                 }
-#if !SILVERLIGHT && !NETFX_CORE
+#if !NETFX_CORE
                 else if ((frameworkContentElement = _targetObject as FrameworkContentElement) != null)
                 {
                     _isFrameworkElementLoaded = frameworkContentElement.IsLoaded;
@@ -115,7 +119,8 @@ namespace Catel.Windows.Markup
             }
 #endif
 
-            return ProvideDynamicValue();
+            var value = GetValue();
+            return value;
         }
 
         private void OnTargetObjectLoadedInternal(object sender, RoutedEventArgs e)
@@ -165,7 +170,7 @@ namespace Catel.Windows.Markup
         /// </summary>
         protected void UpdateValue()
         {
-            var value = ProvideDynamicValue();
+            var value = GetValue();
 
             if (_targetObject != null)
             {
@@ -214,10 +219,24 @@ namespace Catel.Windows.Markup
         }
 
         /// <summary>
-        /// Provides the dynamic value.
+        /// Gets the value by combining the rights methods (so we don't have to repeat ourselves).
         /// </summary>
         /// <returns>System.Object.</returns>
-        protected abstract object ProvideDynamicValue();
+        private object GetValue()
+        {
+            var value = ProvideDynamicValue(_serviceProvider);
+            return value;
+        }
+
+        /// <summary>
+        /// Provides the dynamic value.
+        /// </summary>
+        /// <param name="serviceProvider">The service provider.</param>
+        /// <returns>System.Object.</returns>
+        protected virtual object ProvideDynamicValue(IServiceProvider serviceProvider)
+        {
+            return null;
+        }
         #endregion
     }
 }

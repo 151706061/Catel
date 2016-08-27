@@ -9,8 +9,11 @@ namespace Catel.Test.Data
     using System.Collections.Generic;
     using System.ComponentModel;
     using System.ComponentModel.DataAnnotations;
+    using System.Reflection;
+
     using Catel.Data;
     using Catel.IoC;
+    using Catel.Reflection;
 
     using NUnit.Framework;
 
@@ -62,7 +65,6 @@ namespace Catel.Test.Data
                 Assert.AreEqual(0, validation.BusinessRuleErrorCount);
             }
 
-#if !WINDOWS_PHONE
             [TestCase]
             public void ValidationUsingAnnotationsForCatelProperties()
             {
@@ -105,11 +107,9 @@ namespace Catel.Test.Data
 
                 Assert.IsFalse(validationObject.HasErrors);
             }
-#endif
             #endregion
 
             #region IDataErrorInfo tests
-#if !WINDOWS_PHONE
             [TestCase]
             public void IDataErrorInfo_FieldWithError()
             {
@@ -126,11 +126,9 @@ namespace Catel.Test.Data
                 Assert.IsFalse(validation.HasErrors);
                 Assert.IsTrue(string.IsNullOrEmpty(((IDataErrorInfo)obj)["ErrorWhenEmpty"]));
             }
-#endif
             #endregion
 
             #region INotifyDataErrorInfo tests
-#if !WINDOWS_PHONE
             [TestCase]
             public void INotifyDataErrorInfo_FieldWithError()
             {
@@ -253,7 +251,6 @@ namespace Catel.Test.Data
                 }
                 Assert.AreEqual(0, count);
             }
-#endif
             #endregion
 
             #region IDataWarningInfo tests
@@ -426,7 +423,6 @@ namespace Catel.Test.Data
                 Assert.AreEqual(1, validator.AfterValidationCount);
             }
 
-#if !WINDOWS_PHONE
             [TestCase]
             public void IValidator_AddFieldErrors()
             {
@@ -458,7 +454,6 @@ namespace Catel.Test.Data
 
                 Assert.AreEqual("Error", dataErrorInfo.Error);
             }
-#endif
             #endregion
         }
 
@@ -630,12 +625,12 @@ namespace Catel.Test.Data
                     ValidateUsingDataAnnotations = value;
                 }
 
-                public void Validate(bool force, bool useAnnotations)
+                public new void Validate(bool force, bool useAnnotations)
                 {
                     base.Validate(force, useAnnotations);
                 }
 
-                public void Validate(bool force)
+                public new void Validate(bool force)
                 {
                     base.Validate(force);
                 }
@@ -690,6 +685,70 @@ namespace Catel.Test.Data
                 model.Validate(true);
 
                 Assert.AreEqual(1, model.Counter);
+            }
+        }
+
+        [TestFixture]
+        public class IgnoreDataAnnotationValidationOnSetValue
+        {
+            public class ModelWithoutAnnotation : ModelBase
+            {
+                public static readonly PropertyData CounterProperty = RegisterProperty<ModelWithoutAnnotation, int>(model => model.Counter);
+
+                public int Counter
+                {
+                    get { return GetValue<int>(CounterProperty); }
+
+                    set { SetValue(CounterProperty, value); }
+                }
+
+                public void SetValidateUsingDataAnnotations(bool value)
+                {
+                    ValidateUsingDataAnnotations = value;
+                }
+
+                public bool HasNotValidatedProperties()
+                {
+                    var t = typeof(ModelBase);
+                    var f = t.GetFieldEx("_propertiesNotCheckedDuringDisabledValidation", BindingFlags.Instance | BindingFlags.NonPublic);
+                    var v = f.GetValue(this) as HashSet<string>;
+
+                    return v.Count != 0;
+                }
+            }
+
+            [TestCase]
+            public void OnInstancePropertyIgnoreDataAnnotationSkipAnnotationValidation()
+            {
+                var oldSuspension = Model.SuspendValidationForAllModels;
+                Model.SuspendValidationForAllModels = true;
+
+                // Set intance property to skip data annotations validation
+                var model = new ModelWithoutAnnotation();
+                model.SetValidateUsingDataAnnotations(false);
+
+                model.Counter = 1;
+
+                Assert.AreEqual(false, model.HasNotValidatedProperties());
+
+                Model.SuspendValidationForAllModels = oldSuspension;
+            }
+
+
+            [TestCase]
+            public void ByDefaultValidateDataAnnotationOnSetValue()
+            {
+                var oldSuspension = Model.SuspendValidationForAllModels;
+                Model.SuspendValidationForAllModels = true;
+
+                // By default instance property set to check annotation validation
+                var model = new ModelWithoutAnnotation();
+
+                model.Counter = 1;
+
+                Assert.AreEqual(true, model.HasNotValidatedProperties());
+
+                Model.SuspendValidationForAllModels = oldSuspension;
             }
         }
 #endif

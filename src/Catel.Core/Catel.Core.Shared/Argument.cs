@@ -44,8 +44,9 @@ namespace Catel
         {
             if (paramValue == null)
             {
-                Log.Error("Argument '{0}' cannot be null", ObjectToStringHelper.ToString(paramName));
-                throw new ArgumentNullException(paramName);
+                var error = $"Argument '{ObjectToStringHelper.ToString(paramName)}' cannot be null";
+                Log.Error(error);
+                throw new ArgumentNullException(paramName, error);
             }
         }
 
@@ -61,25 +62,10 @@ namespace Catel
         {
             if (string.IsNullOrEmpty(paramValue))
             {
-                var error = string.Format("Argument '{0}' cannot be null or empty", ObjectToStringHelper.ToString(paramName));
-
+                var error = $"Argument '{ObjectToStringHelper.ToString(paramName)}' cannot be null or empty";
                 Log.Error(error);
-
                 throw new ArgumentException(error, paramName);
             }
-        }
-
-        /// <summary>
-        /// Determines whether the specified argument is not <c>null</c> or empty.
-        /// </summary>
-        /// <param name="paramName">Name of the parameter.</param>
-        /// <param name="paramValue">Value of the parameter.</param>
-        /// <exception cref="ArgumentException">If <paramref name="paramValue" /> is <c>null</c> or empty.</exception>
-        [DebuggerNonUserCode, DebuggerStepThrough]
-        [ObsoleteEx(ReplacementTypeOrMember = "IsNotEmpty(string paramName, Guid paramValue)", TreatAsErrorFromVersion = "4.2", RemoveInVersion = "5.0")]
-        public static void IsNotNullOrEmpty(string paramName, Guid paramValue)
-        {
-            IsNotEmpty(paramName, paramValue);
         }
 
         /// <summary>
@@ -93,10 +79,8 @@ namespace Catel
         {
             if (paramValue == Guid.Empty)
             {
-                var error = string.Format("Argument '{0}' cannot be Guid.Empty", ObjectToStringHelper.ToString(paramName));
-
+                var error = $"Argument '{ObjectToStringHelper.ToString(paramName)}' cannot be Guid.Empty";
                 Log.Error(error);
-
                 throw new ArgumentException(error, paramName);
             }
         }
@@ -113,10 +97,8 @@ namespace Catel
         {
             if (!paramValue.HasValue || paramValue.Value == Guid.Empty)
             {
-                var error = string.Format("Argument '{0}' cannot be null or Guid.Empty", ObjectToStringHelper.ToString(paramName));
-
+                var error = $"Argument '{ObjectToStringHelper.ToString(paramName)}' cannot be null or Guid.Empty";
                 Log.Error(error);
-
                 throw new ArgumentException(error, paramName);
             }
         }
@@ -133,10 +115,8 @@ namespace Catel
         {
             if (string.IsNullOrEmpty(paramValue) || (string.CompareOrdinal(paramValue.Trim(), string.Empty) == 0))
             {
-                var error = string.Format("Argument '{0}' cannot be null or whitespace", ObjectToStringHelper.ToString(paramName));
-
+                var error = $"Argument '{ObjectToStringHelper.ToString(paramName)}' cannot be null or whitespace";
                 Log.Error(error);
-
                 throw new ArgumentException(error, paramName);
             }
         }
@@ -153,10 +133,8 @@ namespace Catel
         {
             if ((paramValue == null) || (paramValue.Length == 0))
             {
-                var error = string.Format("Argument '{0}' cannot be null or an empty array", ObjectToStringHelper.ToString(paramName));
-
+                var error = $"Argument '{ObjectToStringHelper.ToString(paramName)}' cannot be null or an empty array";
                 Log.Error(error);
-
                 throw new ArgumentException(error, paramName);
             }
         }
@@ -180,8 +158,7 @@ namespace Catel
 
             if (!validation(paramValue, minimumValue, maximumValue))
             {
-                var error = string.Format("Argument '{0}' should be between {1} and {2}", ObjectToStringHelper.ToString(paramName), minimumValue, maximumValue);
-
+                var error = $"Argument '{ObjectToStringHelper.ToString(paramName)}' should be between {minimumValue} and {maximumValue}";
                 Log.Error(error);
                 throw new ArgumentOutOfRangeException(paramName, error);
             }
@@ -222,10 +199,9 @@ namespace Catel
 
             if (!validation(paramValue, minimumValue))
             {
-                var error = string.Format("Argument '{0}' should be minimal {1}", ObjectToStringHelper.ToString(paramName), minimumValue);
-
+                var error = $"Argument '{ObjectToStringHelper.ToString(paramName)}' should be minimal {minimumValue}";
                 Log.Error(error);
-                throw new ArgumentOutOfRangeException(paramName);
+                throw new ArgumentOutOfRangeException(paramName, error);
             }
         }
 
@@ -261,8 +237,7 @@ namespace Catel
         {
             if (!validation(paramValue, maximumValue))
             {
-                var error = string.Format("Argument '{0}' should be at maximum {1}", ObjectToStringHelper.ToString(paramName), maximumValue);
-
+                var error = $"Argument '{ObjectToStringHelper.ToString(paramName)}' should be at maximum {maximumValue}";
                 Log.Error(error);
                 throw new ArgumentOutOfRangeException(paramName, error);
             }
@@ -319,10 +294,8 @@ namespace Catel
                 runtimeBaseType = type.GetBaseTypeEx();
             } while (runtimeBaseType != null);
 
-            var error = string.Format("Type '{0}' should have type '{1}' as base class, but does not", type.Name, baseType.Name);
-
+            var error = $"Type '{type.Name}' should have type '{baseType.Name}' as base class, but does not";
             Log.Error(error);
-
             throw new ArgumentException(error, paramName);
         }
 
@@ -413,11 +386,9 @@ namespace Catel
                 return;
             }
 
-            var error = string.Format("Type '{0}' should implement interface '{1}', but does not", type.Name, interfaceType.Name);
-
+            var error = $"Type '{type.Name}' should implement interface '{interfaceType.Name}', but does not";
             Log.Error(error);
-
-            throw new ArgumentException(error, "type");
+            throw new ArgumentException(error, paramName);
         }
 
         /// <summary>
@@ -469,10 +440,8 @@ namespace Catel
             }
 
             var error = errorBuilder.ToString();
-
             Log.Error(error);
-
-            throw new ArgumentException(error, "type");
+            throw new ArgumentException(error, paramName);
         }
 
         /// <summary>
@@ -518,11 +487,9 @@ namespace Catel
                 return;
             }
 
-            var error = string.Format("Type '{0}' should be of type '{1}', but is not", type.Name, requiredType.Name);
-
+            var error = $"Type '{type.Name}' should be of type '{requiredType.Name}', but is not";
             Log.Error(error);
-
-            throw new ArgumentException(error, "type");
+            throw new ArgumentException(error, paramName);
         }
 
         /// <summary>
@@ -579,10 +546,8 @@ namespace Catel
             }
 
             var error = errorBuilder.ToString();
-
             Log.Error(error);
-
-            throw new ArgumentException(error, "type");
+            throw new ArgumentException(error, paramName);
         }
 
         /// <summary>
@@ -628,11 +593,9 @@ namespace Catel
                 return;
             }
 
-            var error = string.Format("Type '{0}' should not be of type '{1}', but is", type.Name, notRequiredType.Name);
-
+            var error = $"Type '{type.Name}' should not be of type '{notRequiredType.Name}', but is";
             Log.Error(error);
-
-            throw new ArgumentException(error, "type");
+            throw new ArgumentException(error, paramName);
         }
 
         /// <summary>
@@ -677,11 +640,9 @@ namespace Catel
             {
                 if (notRequiredType.IsAssignableFromEx(type))
                 {
-                    var error = string.Format("Type '{0}' should not be of type '{1}', but is", type.Name, notRequiredType.Name);
-
+                    var error = $"Type '{type.Name}' should not be of type '{notRequiredType.Name}', but is";
                     Log.Error(error);
-
-                    throw new ArgumentException(error, "type");
+                    throw new ArgumentException(error, paramName);
                 }
             }
         }
@@ -704,11 +665,9 @@ namespace Catel
 
             if (Regex.IsMatch(paramValue, pattern, regexOptions))
             {
-                var error = string.Format("Argument '{0}' matches with pattern '{1}'", paramName, pattern);
-
+                var error = $"Argument '{paramName}' matches with pattern '{pattern}'";
                 Log.Error(error);
-
-                throw new ArgumentException(error);
+                throw new ArgumentException(error, paramName);
             }
         }
 
@@ -730,11 +689,9 @@ namespace Catel
 
             if (!Regex.IsMatch(paramValue, pattern, regexOptions))
             {
-                var error = string.Format("Argument '{0}' doesn't match with pattern '{1}'", paramName, pattern);
-
+                var error = $"Argument '{paramName}' doesn't match with pattern '{pattern}'";
                 Log.Error(error);
-
-                throw new ArgumentException(error);
+                throw new ArgumentException(error, paramName);
             }
         }
 
@@ -747,7 +704,6 @@ namespace Catel
         /// <param name="validation">The validation function.</param>
         /// <exception cref="ArgumentException">If the <paramref name="validation" /> code returns <c>false</c>.</exception>
         /// <exception cref="ArgumentNullException">The <paramref name="paramName" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentNullException">The <paramref name="paramValue" /> is <c>null</c>.</exception>
         [DebuggerNonUserCode, DebuggerStepThrough]
         public static void IsValid<T>(string paramName, T paramValue, Func<bool> validation)
         {
@@ -765,7 +721,6 @@ namespace Catel
         /// <param name="validation">The validation function.</param>
         /// <exception cref="ArgumentException">If the <paramref name="validation" /> code returns <c>false</c>.</exception>
         /// <exception cref="ArgumentNullException">The <paramref name="paramName" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentNullException">The <paramref name="paramValue" /> is <c>null</c>.</exception>
         /// <exception cref="ArgumentNullException">The <paramref name="validation" /> is <c>null</c>.</exception>
         [DebuggerNonUserCode, DebuggerStepThrough]
         public static void IsValid<T>(string paramName, T paramValue, Func<T, bool> validation)
@@ -784,7 +739,6 @@ namespace Catel
         /// <param name="validator">The validator.</param>
         /// <exception cref="ArgumentException">If the <see cref="IValueValidator{TValue}.IsValid" /> of  <paramref name="validator" /> returns <c>false</c>.</exception>
         /// <exception cref="ArgumentNullException">The <paramref name="paramName" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentNullException">The <paramref name="paramValue" /> is <c>null</c>.</exception>
         /// <exception cref="ArgumentNullException">The <paramref name="validator" /> is <c>null</c>.</exception>
         [DebuggerNonUserCode, DebuggerStepThrough]
         public static void IsValid<T>(string paramName, T paramValue, IValueValidator<T> validator)
@@ -803,19 +757,14 @@ namespace Catel
         /// <param name="validation">The validation function.</param>
         /// <exception cref="ArgumentException">If the <paramref name="validation" /> code returns <c>false</c>.</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="paramName" /> is <c>null</c>.</exception>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="paramValue" /> is <c>null</c>.</exception>
         [DebuggerNonUserCode, DebuggerStepThrough]
         public static void IsValid<T>(string paramName, T paramValue, bool validation)
         {
-            Argument.IsNotNull("paramValue", paramValue);
-
             if (!validation)
             {
-                var error = string.Format("Argument '{0}' is not valid", ObjectToStringHelper.ToString(paramName));
-
+                var error = $"Argument '{ObjectToStringHelper.ToString(paramName)}' is not valid";
                 Log.Error(error);
-
-                throw new ArgumentException(error);
+                throw new ArgumentException(error, paramName);
             }
         }
 
@@ -834,12 +783,10 @@ namespace Catel
             if (!isSupported)
             {
                 var error = string.Format(errorFormat, args);
-
                 Log.Error(error);
-
                 throw new NotSupportedException(error);
             }
         }
-        #endregion
+#endregion
     }
 }

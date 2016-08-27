@@ -7,6 +7,7 @@
 namespace Catel.Runtime.Serialization.Xml
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
@@ -131,7 +132,7 @@ namespace Catel.Runtime.Serialization.Xml
                         var fieldInfo = type.GetFieldEx(memberName);
                         if (fieldInfo == null)
                         {
-                            Log.Warning("Failed to retrieve the field info of '{0}.{1}' during warmup", type.GetSafeFullName(), memberName);
+                            Log.Warning("Failed to retrieve the field info of '{0}.{1}' during warmup", type.GetSafeFullName(false), memberName);
                             return;
                         }
 
@@ -142,7 +143,7 @@ namespace Catel.Runtime.Serialization.Xml
                         var propertyInfo = type.GetPropertyEx(memberName);
                         if (propertyInfo == null)
                         {
-                            Log.Warning("Failed to retrieve the property info of '{0}.{1}' during warmup", type.GetSafeFullName(), memberName);
+                            Log.Warning("Failed to retrieve the property info of '{0}.{1}' during warmup", type.GetSafeFullName(false), memberName);
                             return;
                         }
 
@@ -160,7 +161,7 @@ namespace Catel.Runtime.Serialization.Xml
             }
             catch (Exception ex)
             {
-                Log.Warning(ex, "Failed to warmup member '{0}.{1}'. This member might cause problems during serialization", type.GetSafeFullName(), memberName);
+                Log.Warning(ex, "Failed to warmup member '{0}.{1}'. This member might cause problems during serialization", type.GetSafeFullName(false), memberName);
             }
         }
 
@@ -332,7 +333,7 @@ namespace Catel.Runtime.Serialization.Xml
             }
             catch (Exception ex)
             {
-                Log.Debug(ex, "Failed to deserialize '{0}.{1}'", memberValue.ModelType.GetSafeFullName(), memberValue.Name);
+                Log.Debug(ex, "Failed to deserialize '{0}.{1}'", memberValue.ModelTypeName, memberValue.Name);
             }
 
             return SerializationObject.FailedToDeserialize(modelType, memberValue.MemberGroup, memberValue.Name);
@@ -354,7 +355,7 @@ namespace Catel.Runtime.Serialization.Xml
                 var properties = modelType.GetPropertiesEx();
                 foreach (var property in properties)
                 {
-                    if (AttributeHelper.IsDecoratedWithAttribute<XmlIgnoreAttribute>(property))
+                    if (property.IsDecoratedWithAttribute<XmlIgnoreAttribute>())
                     {
                         ignoredProperties.Add(property.Name);
                     }
@@ -384,13 +385,45 @@ namespace Catel.Runtime.Serialization.Xml
 
             OptimizeXDocument(document);
 
-            if (ShouldSerializeAsCollection(context.ModelType, context.Model))
+            if (ShouldSerializeAsCollection(context.ModelType))
             {
                 // Because we have 'Items\Items' for collections, remote the root
                 document = new XDocument(document.Root.FirstNode);
             }
 
             document.Save(stream);
+        }
+
+        /// <summary>
+        /// Gets the name of the xml element.
+        /// </summary>
+        /// <param name="modelType">Type of the model.</param>
+        /// <param name="model">The model.</param>
+        /// <param name="memberName">Name of the member.</param>
+        /// <returns>System.String.</returns>
+        protected string GetXmlElementName(Type modelType, object model, string memberName)
+        {
+            if (ShouldSerializeAsCollection(modelType))
+            {
+                return CollectionName;
+            }
+
+            XmlRootAttribute xmlRootAttribute;
+            if (modelType.TryGetAttribute(out xmlRootAttribute))
+            {
+                return xmlRootAttribute.ElementName;
+            }
+
+            if (!string.IsNullOrWhiteSpace(memberName))
+            {
+                var propertyDataManager = PropertyDataManager.Default;
+                if (propertyDataManager.IsPropertyNameMappedToXmlElement(modelType, memberName))
+                {
+                    return propertyDataManager.MapPropertyNameToXmlElementName(modelType, memberName);
+                }
+            }
+
+            return modelType.Name;
         }
 
         /// <summary>
@@ -479,18 +512,7 @@ namespace Catel.Runtime.Serialization.Xml
                 {
                     rootName = _rootNameCache.GetFromCacheOrFetch(modelType, () =>
                     {
-                        if (ShouldSerializeAsCollection(modelType, model))
-                        {
-                            return CollectionName;
-                        }
-
-                        XmlRootAttribute xmlRootAttribute;
-                        if (AttributeHelper.TryGetAttribute(modelType, out xmlRootAttribute))
-                        {
-                            return xmlRootAttribute.ElementName;
-                        }
-
-                        return rootName = modelType.Name;
+                        return GetXmlElementName(modelType, model, null);
                     });
                 }
 
@@ -582,11 +604,74 @@ namespace Catel.Runtime.Serialization.Xml
                 }
             }
 
-            var serializer = _dataContractSerializerFactory.GetDataContractSerializer(modelType, propertyTypeToDeserialize, xmlName, null, null);
+            var isDeserialized = false;
 
-            using (var xmlReader = element.CreateReader())
+            if (propertyTypeToDeserialize == typeof(string) && ShouldSerializeUsingParse(memberValue, false))
             {
-                value = serializer.ReadObject(xmlReader, false);
+                var tempValue = memberValue.Value;
+                memberValue.Value = element.Value;
+
+                var parsedValue = DeserializeUsingObjectParse(context, memberValue);
+                if (parsedValue != null)
+                {
+                    value = parsedValue;
+
+                    isDeserialized = true;
+                }
+                else
+                {
+                    memberValue.Value = tempValue;
+                }
+            }
+
+            if (!isDeserialized && ShouldSerializeModelAsCollection(propertyTypeToDeserialize))
+            {
+                var collection = value as IList;
+                if (collection == null)
+                {
+                    collection = CreateModelInstance(propertyTypeToDeserialize) as IList;
+                }
+
+                if (collection == null)
+                {
+                    throw Log.ErrorAndCreateException<NotSupportedException>("Cannot deserialize type '{0}', it should implement IList in order to be deserialized", propertyTypeToDeserialize.GetSafeFullName(false));
+                }
+
+                var realCollectionType = collection.GetType();
+                var childElementType = realCollectionType.GetCollectionElementType();
+                if (childElementType == null)
+                {
+                    throw Log.ErrorAndCreateException<NotSupportedException>("Cannot deserialize type '{0}', could not determine the element type of the collection", propertyTypeToDeserialize.GetSafeFullName(false));
+                }
+
+                var serializer = _dataContractSerializerFactory.GetDataContractSerializer(propertyTypeToDeserialize, childElementType, xmlName, null, null);
+
+                var childElements = element.Elements();
+                foreach (var childElement in childElements)
+                {
+                    using (var xmlReader = childElement.CreateReader())
+                    {
+                        var childValue = serializer.ReadObject(xmlReader, false);
+                        if (childValue != null)
+                        {
+                            collection.Add(childValue);
+                        }
+                    }
+                }
+
+                value = collection;
+
+                isDeserialized = true;
+            }
+
+            if (!isDeserialized)
+            {
+                var serializer = _dataContractSerializerFactory.GetDataContractSerializer(modelType, propertyTypeToDeserialize, xmlName, null, null);
+
+                using (var xmlReader = element.CreateReader())
+                {
+                    value = serializer.ReadObject(xmlReader, false);
+                }
             }
 
             // Fix for CTL-555
@@ -648,7 +733,7 @@ namespace Catel.Runtime.Serialization.Xml
                     xmlWriter.WriteStartElement(elementName);
 
 #if XAMARIN
-                    xmlWriter.WriteAttributeString("xmlns", namespacePrefix, defaultNamespace, "http://catel.codeplex.com"); 
+                    xmlWriter.WriteAttributeString("xmlns", namespacePrefix, defaultNamespace, "http://catel.codeplex.com");
 #endif
 
                     xmlWriter.WriteAttributeString(namespacePrefix, "IsNull", null, "true");
@@ -656,7 +741,7 @@ namespace Catel.Runtime.Serialization.Xml
                 }
                 else
                 {
-                    var memberTypeToSerialize = memberValue.ActualMemberType;
+                    var memberTypeToSerialize = memberValue.GetBestMemberType();
                     var serializer = _dataContractSerializerFactory.GetDataContractSerializer(modelType, memberTypeToSerialize, elementName, null, null);
 
                     ReferenceInfo referenceInfo = null;
@@ -672,7 +757,11 @@ namespace Catel.Runtime.Serialization.Xml
 
                             if (!referenceInfo.IsFirstUsage)
                             {
-                                Log.Debug("Existing reference detected for element type '{0}' with id '{1}', only storing id", memberTypeToSerialize.GetSafeFullName(), referenceInfo.Id);
+                                // Note: we don't want to call GetSafeFullName if we don't have to
+                                if (LogManager.IsDebugEnabled ?? false)
+                                {
+                                    Log.Debug("Existing reference detected for element type '{0}' with id '{1}', only storing id", memberTypeToSerialize.GetSafeFullName(false), referenceInfo.Id);
+                                }
 
                                 //serializer.WriteStartObject(xmlWriter, memberValue.Value);
                                 xmlWriter.WriteStartElement(elementName);
@@ -711,7 +800,32 @@ namespace Catel.Runtime.Serialization.Xml
                             xmlWriter.WriteAttributeString(namespacePrefix, "type", null, memberTypeToSerializerName);
                         }
 
-                        serializer.WriteObjectContent(xmlWriter, memberValue.Value);
+                        // In special cases, we need to write our own collection items. One case is where a custom ModelBase
+                        // implements IList and gets inside a StackOverflow
+                        var serialized = false;
+                        if (ShouldSerializeModelAsCollection(memberValue.GetBestMemberType()))
+                        {
+                            var collection = memberValue.Value as IEnumerable;
+                            if (collection != null)
+                            {
+                                foreach (var item in collection)
+                                {
+                                    var subItemElementName = GetXmlElementName(item.GetType(), item, null);
+                                    xmlWriter.WriteStartElement(subItemElementName);
+
+                                    serializer.WriteObjectContent(xmlWriter, item);
+
+                                    xmlWriter.WriteEndElement();
+                                }
+
+                                serialized = true;
+                            }
+                        }
+
+                        if (!serialized)
+                        {
+                            serializer.WriteObjectContent(xmlWriter, memberValue.Value);
+                        }
 
                         xmlWriter.WriteEndElement();
                     }

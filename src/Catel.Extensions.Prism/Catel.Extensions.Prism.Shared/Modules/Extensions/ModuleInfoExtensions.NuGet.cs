@@ -16,9 +16,14 @@ namespace Catel.Modules
     using Catel.Caching;
     using Catel.Logging;
 
+#if PRISM6
+    using Prism.Modularity;
+#else
     using Microsoft.Practices.Prism.Modularity;
+#endif
 
     using NuGet;
+
 
     /// <summary>
     /// The module info extensions.
@@ -142,9 +147,7 @@ namespace Catel.Modules
             Match typeNameMatch = TypeNameRegex.Match(moduleInfo.ModuleType);
             if (!typeNameMatch.Success)
             {
-                Log.Error(ModuleTypeMustBeSpecifiedUsingQualifiedNamePatternErrorMessage);
-
-                throw new InvalidOperationException(ModuleTypeMustBeSpecifiedUsingQualifiedNamePatternErrorMessage);
+                throw Log.ErrorAndCreateException<InvalidOperationException>(ModuleTypeMustBeSpecifiedUsingQualifiedNamePatternErrorMessage);
             }
 
             var assemblyName = typeNameMatch.Groups[1].Value.Trim();

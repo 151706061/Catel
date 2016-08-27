@@ -4,7 +4,7 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-#if !WINDOWS_PHONE && !XAMARIN
+#if !XAMARIN
 
 namespace Catel
 {
@@ -37,8 +37,8 @@ namespace Catel
         /// <exception cref="ArgumentNullException">The <paramref name="inputGesture"/> is <c>null</c>.</exception>
         public static Dictionary<string, ICommand> FindCommandsByGesture(this ICommandManager commandManager, InputGesture inputGesture)
         {
-            Argument.IsNotNull(() => commandManager);
-            Argument.IsNotNull(() => inputGesture);
+            Argument.IsNotNull("commandManager", commandManager);
+            Argument.IsNotNull("inputGesture", inputGesture);
 
             var commands = new Dictionary<string, ICommand>();
 
@@ -65,17 +65,19 @@ namespace Catel
         /// <exception cref="ArgumentNullException">The <paramref name="commandNameFieldName"/> is <c>null</c>.</exception>
         public static void CreateCommandWithGesture(this ICommandManager commandManager, Type containerType, string commandNameFieldName)
         {
-            Argument.IsNotNull(() => commandManager);
-            Argument.IsNotNull(() => containerType);
-            Argument.IsNotNullOrWhitespace(() => commandNameFieldName);
+            Argument.IsNotNull("commandManager", commandManager);
+            Argument.IsNotNull("containerType", containerType);
+            Argument.IsNotNullOrWhitespace("commandNameFieldName", commandNameFieldName);
 
             Log.Debug("Creating command '{0}'", commandNameFieldName);
 
-            var commandNameField = containerType.GetFieldEx(commandNameFieldName, BindingFlags.Public | BindingFlags.Static);
+            // Note: we must store bindingflags inside variable otherwise invalid IL will be generated
+            var bindingFlags = BindingFlags.Public | BindingFlags.Static;
+            var commandNameField = containerType.GetFieldEx(commandNameFieldName, bindingFlags);
             if (commandNameField == null)
             {
-                Log.ErrorAndThrowException<InvalidOperationException>("Command '{0}' is not available on container type '{1}'",
-                    commandNameFieldName, containerType.GetSafeFullName());
+                throw Log.ErrorAndCreateException<InvalidOperationException>("Command '{0}' is not available on container type '{1}'",
+                    commandNameFieldName, containerType.GetSafeFullName(false));
             }
 
             var commandName = (string)commandNameField.GetValue(null);
@@ -86,8 +88,7 @@ namespace Catel
             }
 
             InputGesture commandInputGesture = null;
-            var inputGestureField = containerType.GetFieldEx(string.Format("{0}InputGesture", commandNameFieldName),
-                BindingFlags.Public | BindingFlags.Static);
+            var inputGestureField = containerType.GetFieldEx(string.Format("{0}InputGesture", commandNameFieldName), bindingFlags);
             if (inputGestureField != null)
             {
                 commandInputGesture = inputGestureField.GetValue(null) as InputGesture;
@@ -100,23 +101,26 @@ namespace Catel
             var commandContainerType = (from type in TypeCache.GetTypes()
                                         where string.Equals(type.Name, commandContainerName, StringComparison.OrdinalIgnoreCase)
                                         select type).FirstOrDefault();
-            if (commandContainerType != null)
+            if (commandContainerType == null)
             {
-                Log.Debug("Found command container '{0}', registering it in the ServiceLocator now", commandContainerType.GetSafeFullName());
+                Log.Debug("Couldn't find command container '{0}', you will need to add a custom action or command manually in order to make the CompositeCommand useful", commandContainerName);
+                return;
+            }
 
-                var serviceLocator = commandManager.GetServiceLocator();
-                if (!serviceLocator.IsTypeRegistered(commandContainerType))
+            Log.Debug("Found command container '{0}', registering it in the ServiceLocator now", commandContainerType.GetSafeFullName(false));
+
+            var serviceLocator = commandManager.GetServiceLocator();
+            if (!serviceLocator.IsTypeRegistered(commandContainerType))
+            {
+                var typeFactory = serviceLocator.ResolveType<ITypeFactory>();
+                var commandContainer = typeFactory.CreateInstance(commandContainerType);
+                if (commandContainer != null)
                 {
-                    var typeFactory = serviceLocator.ResolveType<ITypeFactory>();
-                    var commandContainer = typeFactory.CreateInstance(commandContainerType);
-                    if (commandContainer != null)
-                    {
-                        serviceLocator.RegisterInstance(commandContainer);
-                    }
-                    else
-                    {
-                        Log.Warning("Cannot create command container '{0}', skipping registration", commandContainerType.GetSafeFullName());
-                    }
+                    serviceLocator.RegisterInstance(commandContainer);
+                }
+                else
+                {
+                    Log.Warning("Cannot create command container '{0}', skipping registration", commandContainerType.GetSafeFullName(false));
                 }
             }
         }

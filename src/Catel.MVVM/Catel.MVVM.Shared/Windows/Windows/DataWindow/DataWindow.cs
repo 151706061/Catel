@@ -4,7 +4,7 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-#if NET || SL5
+#if NET
 
 namespace Catel.Windows
 {
@@ -26,10 +26,9 @@ namespace Catel.Windows
     using Exceptions = MVVM.Properties.Exceptions;
     using Catel.MVVM.Providers;
     using Catel.Threading;
-
-#if SILVERLIGHT
-    using System.Windows.Media;
-#endif
+    using Catel.Windows.Threading;
+    using IoC;
+    using Services;
 
     /// <summary>
     /// Mode of the <see cref="DataWindow"/>.
@@ -108,29 +107,20 @@ namespace Catel.Windows
     /// <see cref="Window"/> class that implements the <see cref="InfoBarMessageControl"/> and
     /// the default buttons, according to the <see cref="DataWindowMode"/>.
     /// </summary>
-    public class DataWindow
-#if SILVERLIGHT
-        : ChildWindow, IDataWindow
-#else
-        : System.Windows.Window, IDataWindow
-#endif
+    public class DataWindow : System.Windows.Window, IDataWindow
     {
         #region Constants
-#if NET
         /// <summary>
         /// Offset of the window to the sides of the primary monitor.
         /// </summary>
         private const int Offset = 50;
-#endif
         #endregion
 
         #region Fields
-        /// <summary>
-        /// The log.
-        /// </summary>
         private static readonly ILog Log = LogManager.GetCurrentClassLogger();
 
         private bool _isWrapped;
+        private bool _forceClose;
 
         private ICommand _defaultOkCommand;
         private ButtonBase _defaultOkElement;
@@ -206,16 +196,7 @@ namespace Catel.Windows
 
             // Set window style (WPF doesn't allow styling on root elements of XAML files, too bad)
             // For more info, see http://social.msdn.microsoft.com/Forums/en-US/wpf/thread/3059c0e4-c372-4da2-b384-28f271feef05/
-#if SILVERLIGHT
-            Style dataWindowStyle = null;
-            if (this.TryFindResource(typeof(DataWindow), out dataWindowStyle))
-            {
-                DefaultStyleKey = typeof (DataWindow);
-                //Style = dataWindowStyle;
-            }
-#else
             SetResourceReference(StyleProperty, typeof(DataWindow));
-#endif
 
             Mode = mode;
             DefaultButton = defaultButton;
@@ -223,26 +204,18 @@ namespace Catel.Windows
 
             this.FixBlurriness();
 
-#if NET
             SizeToContent = SizeToContent.WidthAndHeight;
             ShowInTaskbar = false;
             ResizeMode = ResizeMode.NoResize;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
             this.ApplyIconFromApplication();
-#endif
 
             ThemeHelper.EnsureCatelMvvmThemeIsLoaded();
 
             _logic = new WindowLogic(this, null, viewModel);
             _logic.TargetViewPropertyChanged += (sender, e) =>
             {
-#if !NET
-                // WPF already calls this method automatically
-                OnPropertyChanged(e);
-
-                PropertyChanged.SafeInvoke(this, e);
-#else
                 // Do not call this for ActualWidth and ActualHeight WPF, will cause problems with NET 40 
                 // on systems where NET45 is *not* installed
                 if (!string.Equals(e.PropertyName, "ActualWidth", StringComparison.InvariantCulture) &&
@@ -250,10 +223,8 @@ namespace Catel.Windows
                 {
                     PropertyChanged.SafeInvoke(this, e);
                 }
-#endif
             };
 
-            _logic.ViewModelClosed += OnViewModelClosed;
             _logic.ViewModelClosedAsync += OnViewModelClosedAsync;
             _logic.ViewModelChanged += (sender, e) => RaiseViewModelChanged();
 
@@ -293,9 +264,8 @@ namespace Catel.Windows
 
             Loaded += (sender, e) => Initialize();
             Closing += OnDataWindowClosing;
-            DataContextChanged += (sender, e) => _viewDataContextChanged.SafeInvoke(this, new DataContextChangedEventArgs(e.OldValue, e.NewValue));
+            DataContextChanged += (sender, e) => _viewDataContextChanged.SafeInvoke(this, () => new DataContextChangedEventArgs(e.OldValue, e.NewValue));
 
-#if NET
             if (setOwnerAndFocus)
             {
                 this.SetOwnerWindowAndFocus();
@@ -304,7 +274,6 @@ namespace Catel.Windows
             {
                 this.FocusFirstControl();
             }
-#endif
         }
         #endregion
 
@@ -462,12 +431,14 @@ namespace Catel.Windows
         /// <summary>
         /// Executes the OK command.
         /// </summary>
-        protected void ExecuteOk()
+        protected Task ExecuteOkAsync()
         {
             if (OnOkCanExecute())
             {
-                OnOkExecute();
+                return OnOkExecuteAsync();
             }
+
+            return TaskHelper.Completed;
         }
 
         /// <summary>
@@ -482,7 +453,7 @@ namespace Catel.Windows
         /// <summary>
         /// Handled when the user invokes the OK command.
         /// </summary>
-        protected async void OnOkExecute()
+        protected async Task OnOkExecuteAsync()
         {
             if (!await ApplyChangesAsync())
             {
@@ -491,15 +462,6 @@ namespace Catel.Windows
 
             ClosedByButton = true;
             SetDialogResultAndMakeSureWindowGetsClosed(true);
-        }
-
-        /// <summary>
-        /// Executes the Cancel command.
-        /// </summary>
-        [ObsoleteEx(ReplacementTypeOrMember = "OnApplyExcuteAsync", TreatAsErrorFromVersion = "4.2", RemoveInVersion = "5.0")]
-        protected void ExecuteCancel()
-        {
-            ExecuteCancelAsync();
         }
 
         /// <summary>
@@ -527,15 +489,6 @@ namespace Catel.Windows
         /// <summary>
         /// Handled when the user invokes the Cancel command.
         /// </summary>
-        [ObsoleteEx(ReplacementTypeOrMember = "OnApplyExcuteAsync", TreatAsErrorFromVersion = "4.2", RemoveInVersion = "5.0")]
-        protected async void OnCancelExecute()
-        {
-            await OnCancelExecuteAsync();
-        }
-
-        /// <summary>
-        /// Handled when the user invokes the Cancel command.
-        /// </summary>
         protected async Task OnCancelExecuteAsync()
         {
             if (!await DiscardChangesAsync())
@@ -553,20 +506,11 @@ namespace Catel.Windows
         /// <summary>
         /// Executes the Apply command.
         /// </summary>
-        [ObsoleteEx(ReplacementTypeOrMember = "ExecuteApplyAsync", TreatAsErrorFromVersion = "4.2", RemoveInVersion = "5.0")]
-        protected void ExecuteApply()
-        {
-            ExecuteApplyAsync();
-        }
-
-        /// <summary>
-        /// Executes the Apply command.
-        /// </summary>
         protected Task ExecuteApplyAsync()
         {
             if (OnApplyCanExecute())
             {
-                return OnApplyExcuteAsync();
+                return OnApplyExecuteAsync();
             }
 
             return TaskHelper.Completed;
@@ -584,16 +528,7 @@ namespace Catel.Windows
         /// <summary>
         /// Handled when the user invokes the Apply command.
         /// </summary>
-        [ObsoleteEx(ReplacementTypeOrMember = "OnApplyExcuteAsync", TreatAsErrorFromVersion = "4.2", RemoveInVersion = "5.0")]
-        protected async void OnApplyExcute()
-        {
-            await OnApplyExcuteAsync();
-        }
-
-        /// <summary>
-        /// Handled when the user invokes the Apply command.
-        /// </summary>
-        protected async Task OnApplyExcuteAsync()
+        protected async Task OnApplyExecuteAsync()
         {
             await ApplyChangesAsync();
         }
@@ -681,69 +616,9 @@ namespace Catel.Windows
             OnViewModelChanged();
 
             ViewModelChanged.SafeInvoke(this);
-            PropertyChanged.SafeInvoke(this, new PropertyChangedEventArgs("ViewModel"));
+            PropertyChanged.SafeInvoke(this, () => new PropertyChangedEventArgs("ViewModel"));
         }
-
-#if SILVERLIGHT
-        /// <summary>
-        /// Builds the visual tree for the <see cref="T:System.Windows.Controls.ChildWindow"/> control when a new template is applied.
-        /// </summary>
-        /// <remarks></remarks>
-        public override void OnApplyTemplate()
-        {
-            base.OnApplyTemplate();
-
-            // Solves issue where ChildWindow does not center when browser is not active
-            var contentRoot = GetTemplateChild("ContentRoot") as FrameworkElement;
-            if (contentRoot != null)
-            {
-                bool centerChildWindow = (HorizontalAlignment == HorizontalAlignment.Center) && (VerticalAlignment == VerticalAlignment.Center);
-                if (centerChildWindow)
-                {
-                    Dispatcher.BeginInvoke(CenterInScreen);
-                }
-            }
-            else
-            {
-                Log.Debug("Cannot center childwindow because 'ContentRoot' cannot be found");
-            }
-        }
-
-        /// <summary>
-        /// Centers the Silverlight ChildWindow in screen.
-        /// </summary>
-        protected void CenterInScreen()
-        {
-            var contentRoot = GetTemplateChild("ContentRoot") as FrameworkElement;
-            if (contentRoot == null)
-            {
-                return;
-            }
-
-            var group = contentRoot.RenderTransform as TransformGroup;
-            if (group == null)
-            {
-                return;
-            }
-
-            foreach (var transform in group.Children.OfType<TranslateTransform>())
-            {
-                // reset transform
-                transform.X = 0.0;
-                transform.Y = 0.0;
-            }
-        }
-#endif
-
-#if SILVERLIGHT
-        /// <summary>
-        /// Invoked when an unhandled <c>KeyUp</c> attached event reaches an element in its route that is derived from this class. Implement this method to add class handling for this event.
-        /// </summary>
-        /// <param name="e">The <see cref="T:System.Windows.Input.KeyEventArgs"/> that contains the event data.</param>
-        protected override void OnKeyUp(KeyEventArgs e)
-        {
-            base.OnKeyUp(e);
-#else
+        
         /// <summary>
         /// Invoked when an unhandled <see cref="Keyboard.KeyDownEvent"/> attached event reaches an element in its route that is derived from this class. Implement this method to add class handling for this event.
         /// </summary>
@@ -751,7 +626,6 @@ namespace Catel.Windows
         protected override void OnKeyDown(KeyEventArgs e)
         {
             base.OnKeyDown(e);
-#endif
 
             if (e.Handled)
             {
@@ -896,37 +770,40 @@ namespace Catel.Windows
                 return;
             }
 
-            if (!WrapControlHelper.CanBeWrapped(newContent as FrameworkElement) || _isWrapped)
+            var newContentAsFrameworkElement = newContent as FrameworkElement;
+            if (_isWrapped || !WrapControlHelper.CanBeWrapped(newContentAsFrameworkElement))
             {
                 return;
             }
 
+            var languageService = ServiceLocator.Default.ResolveType<ILanguageService>();
+
             if (IsOKButtonAvailable)
             {
-                var button = new DataWindowButton(MVVM.Properties.Resources.OK, OnOkExecute, OnOkCanExecute);
+                var button = DataWindowButton.FromAsync(languageService.GetString("OK"), OnOkExecuteAsync, OnOkCanExecute);
                 button.IsDefault = (DefaultButton == DataWindowDefaultButton.OK);
                 _buttons.Add(button);
             }
             if (IsCancelButtonAvailable)
             {
-                var button = new DataWindowButton(MVVM.Properties.Resources.Cancel, OnCancelExecute, OnCancelCanExecute);
+                var button = DataWindowButton.FromAsync(languageService.GetString("Cancel"), OnCancelExecuteAsync, OnCancelCanExecute);
                 button.IsCancel = true;
                 _buttons.Add(button);
             }
             if (IsApplyButtonAvailable)
             {
-                var button = new DataWindowButton(MVVM.Properties.Resources.Apply, OnApplyExcute, OnApplyCanExecute);
+                var button = DataWindowButton.FromAsync(languageService.GetString("Apply"), OnApplyExecuteAsync, OnApplyCanExecute);
                 button.IsDefault = (DefaultButton == DataWindowDefaultButton.Apply);
                 _buttons.Add(button);
             }
             if (IsCloseButtonAvailable)
             {
-                var button = new DataWindowButton(MVVM.Properties.Resources.Close, OnCloseExecute, OnCloseCanExecute);
+                var button = DataWindowButton.FromSync(languageService.GetString("Close"), OnCloseExecute, OnCloseCanExecute);
                 button.IsDefault = (DefaultButton == DataWindowDefaultButton.Close);
                 _buttons.Add(button);
             }
 
-            foreach (DataWindowButton button in _buttons)
+            foreach (var button in _buttons)
             {
                 _commands.Add(button.Command);
             }
@@ -948,18 +825,14 @@ namespace Catel.Windows
 
             _isWrapped = true;
 
-            var contentGrid = WrapControlHelper.Wrap((FrameworkElement)newContent, wrapOptions, _buttons.ToArray(), this);
+            var contentGrid = WrapControlHelper.Wrap(newContentAsFrameworkElement, wrapOptions, _buttons.ToArray(), this);
 
             var internalGrid = contentGrid.FindVisualDescendant(obj => (obj is FrameworkElement) && string.Equals(((FrameworkElement)obj).Name, WrapControlHelper.InternalGridName)) as Grid;
             if (internalGrid != null)
             {
-#if SILVERLIGHT
-                internalGrid.Style = Application.Current.Resources["WindowGridStyle"] as Style;
-#else
                 internalGrid.SetResourceReference(StyleProperty, "WindowGridStyle");
 
-                ((UIElement)newContent).FocusFirstControl();
-#endif
+                newContentAsFrameworkElement.FocusFirstControl();
 
                 _defaultOkCommand = (from button in _buttons
                                      where button.IsDefault
@@ -991,9 +864,28 @@ namespace Catel.Windows
         /// <param name="args">The <see cref="System.ComponentModel.CancelEventArgs"/> instance containing the event data.</param>
         private async void OnDataWindowClosing(object sender, CancelEventArgs args)
         {
-            if (!ClosedByButton)
+            if (!_forceClose && !ClosedByButton)
             {
-                await DiscardChangesAsync();
+                var vm = ViewModel;
+                if (vm != null && vm.IsClosed)
+                {
+                    // Being closed from the vm
+                    return;
+                }
+
+                // CTL-735 always cancel, we will close later once we handled our async result
+                args.Cancel = true;
+
+                if (await DiscardChangesAsync())
+                {
+                    // Now we can close for sure
+                    _forceClose = true;
+
+                    // Dispatcher to make sure we are not inside the same loop
+#pragma warning disable 4014
+                    Dispatcher.BeginInvoke(() => SetDialogResultAndMakeSureWindowGetsClosed(false));
+#pragma warning restore 4014
+                }
             }
         }
 
@@ -1011,17 +903,8 @@ namespace Catel.Windows
         /// <returns>True if successful, otherwise false.</returns>
         protected virtual bool ValidateData()
         {
-            return _logic.ValidateViewModel();
-        }
-
-        /// <summary>
-        /// Applies all changes made by this window.
-        /// </summary>
-        /// <returns>True if successful, otherwise false.</returns>
-        [ObsoleteEx(ReplacementTypeOrMember = "ApplyChangesAsync", TreatAsErrorFromVersion = "4.2", RemoveInVersion = "5.0")]
-        protected virtual Task<bool> ApplyChanges()
-        {
-            return ApplyChangesAsync();
+            var result = _logic.ValidateViewModel();
+            return result;
         }
 
         /// <summary>
@@ -1030,16 +913,8 @@ namespace Catel.Windows
         /// <returns>True if successful, otherwise false.</returns>
         protected async virtual Task<bool> ApplyChangesAsync()
         {
-            return await _logic.SaveViewModelAsync();
-        }
-
-        /// <summary>
-        /// Discards all changes made by this window.
-        /// </summary>
-        [ObsoleteEx(ReplacementTypeOrMember = "DiscardChangesAsync", TreatAsErrorFromVersion = "4.2", RemoveInVersion = "5.0")]
-        protected virtual Task<bool> DiscardChanges()
-        {
-            return DiscardChangesAsync();
+            var result = await _logic.SaveViewModelAsync();
+            return result;
         }
 
         /// <summary>
@@ -1047,7 +922,18 @@ namespace Catel.Windows
         /// </summary>
         protected async virtual Task<bool> DiscardChangesAsync()
         {
-            return await _logic.CancelViewModelAsync();
+            // CTL-735 We might be handling the ViewModel.Closed event
+            var vm = _logic.ViewModel;
+            if (vm != null)
+            {
+                if (vm.IsClosed)
+                {
+                    return true;
+                }
+            }
+
+            var result = await _logic.CancelViewModelAsync();
+            return result;
         }
 
         /// <summary>
@@ -1082,16 +968,6 @@ namespace Catel.Windows
         /// </summary>
         /// <param name="e">The <see cref="System.ComponentModel.PropertyChangedEventArgs"/> instance containing the event data.</param>
         protected virtual void OnViewModelPropertyChanged(PropertyChangedEventArgs e)
-        {
-        }
-
-        /// <summary>
-        /// Called when the <see cref="ViewModel"/> has been closed.
-        /// </summary>
-        /// <param name="sender">The sender.</param>
-        /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        [ObsoleteEx(ReplacementTypeOrMember = "OnViewModelClosedAsync", TreatAsErrorFromVersion = "4.2", RemoveInVersion = "5.0")]
-        protected virtual void OnViewModelClosed(object sender, ViewModelClosedEventArgs e)
         {
         }
 

@@ -140,20 +140,40 @@ namespace Catel.Reflection
         /// Gets the full name of the type in a safe way. This means it checks for null first.
         /// </summary>
         /// <param name="type">The type.</param>
+        /// <param name="fullyQualifiedAssemblyName">if set to <c>true</c>, include the assembly name in the type name.</param>
         /// <returns>The safe full name.</returns>
-        public static string GetSafeFullName(this Type type)
+        public static string GetSafeFullName(this Type type, bool fullyQualifiedAssemblyName /* in v5, set = false */)
         {
             if (type == null)
             {
                 return "NullType";
             }
 
-            if (type.FullName == null)
+            var fullName = string.Empty;
+
+            if (type.FullName != null)
             {
-                return type.Name;
+                fullName = type.FullName;
+            }
+            else
+            {
+                fullName = type.Name;
             }
 
-            return type.FullName;
+            if (fullyQualifiedAssemblyName)
+            {
+                var assemblyName = "unknown_assembly";
+
+                var assembly = type.GetAssemblyEx();
+                if (assembly != null)
+                {
+                    assemblyName = assembly.FullName;
+                }
+
+                fullName += ", " + assemblyName;
+            }
+
+            return fullName;
         }
 
         /// <summary>
@@ -287,15 +307,9 @@ namespace Catel.Reflection
         /// <summary>
         /// The is serializable ex.
         /// </summary>
-        /// <param name="type">
-        /// The type.
-        /// </param>
-        /// <returns>
-        /// The is serializable ex.
-        /// </returns>
-        /// <exception cref="System.ArgumentNullException">
-        /// The <paramref name="type"/> is <c>null</c>.
-        /// </exception>
+        /// <param name="type">The type.</param>
+        /// <returns>The is serializable ex.</returns>
+        /// <exception cref="System.ArgumentNullException">The <paramref name="type" /> is <c>null</c>.</exception>
         public static bool IsSerializableEx(this Type type)
         {
             Argument.IsNotNull("type", type);
@@ -312,15 +326,9 @@ namespace Catel.Reflection
         /// <summary>
         /// The is public ex.
         /// </summary>
-        /// <param name="type">
-        /// The type.
-        /// </param>
-        /// <returns>
-        /// The is public ex.
-        /// </returns>
-        /// <exception cref="System.ArgumentNullException">
-        /// The <paramref name="type"/> is <c>null</c>.
-        /// </exception>
+        /// <param name="type">The type.</param>
+        /// <returns>The is public ex.</returns>
+        /// <exception cref="System.ArgumentNullException">The <paramref name="type" /> is <c>null</c>.</exception>
         public static bool IsPublicEx(this Type type)
         {
             Argument.IsNotNull("type", type);
@@ -335,15 +343,9 @@ namespace Catel.Reflection
         /// <summary>
         /// The is nested public ex.
         /// </summary>
-        /// <param name="type">
-        /// The type.
-        /// </param>
-        /// <returns>
-        /// The is nested public ex.
-        /// </returns>
-        /// <exception cref="System.ArgumentNullException">
-        /// The <paramref name="type"/> is <c>null</c>.
-        /// </exception>
+        /// <param name="type">The type.</param>
+        /// <returns>The is nested public ex.</returns>
+        /// <exception cref="System.ArgumentNullException">The <paramref name="type" /> is <c>null</c>.</exception>
         public static bool IsNestedPublicEx(this Type type)
         {
             Argument.IsNotNull("type", type);
@@ -358,15 +360,9 @@ namespace Catel.Reflection
         /// <summary>
         /// The is interface ex.
         /// </summary>
-        /// <param name="type">
-        /// The type.
-        /// </param>
-        /// <returns>
-        /// The is interface ex.
-        /// </returns>
-        /// <exception cref="System.ArgumentNullException">
-        /// The <paramref name="type"/> is <c>null</c>.
-        /// </exception>
+        /// <param name="type">The type.</param>
+        /// <returns>The is interface ex.</returns>
+        /// <exception cref="System.ArgumentNullException">The <paramref name="type" /> is <c>null</c>.</exception>
         public static bool IsInterfaceEx(this Type type)
         {
             Argument.IsNotNull("type", type);
@@ -429,15 +425,9 @@ namespace Catel.Reflection
         /// <summary>
         /// The is value type ex.
         /// </summary>
-        /// <param name="type">
-        /// The type.
-        /// </param>
-        /// <returns>
-        /// The is value type ex.
-        /// </returns>
-        /// <exception cref="System.ArgumentNullException">
-        /// The <paramref name="type"/> is <c>null</c>.
-        /// </exception>
+        /// <param name="type">The type.</param>
+        /// <returns>The is value type ex.</returns>
+        /// <exception cref="System.ArgumentNullException">The <paramref name="type" /> is <c>null</c>.</exception>
         public static bool IsValueTypeEx(this Type type)
         {
             Argument.IsNotNull("type", type);
@@ -452,15 +442,9 @@ namespace Catel.Reflection
         /// <summary>
         /// The is generic type ex.
         /// </summary>
-        /// <param name="type">
-        /// The type.
-        /// </param>
-        /// <returns>
-        /// The is generic type ex.
-        /// </returns>
-        /// <exception cref="System.ArgumentNullException">
-        /// The <paramref name="type"/> is <c>null</c>.
-        /// </exception>
+        /// <param name="type">The type.</param>
+        /// <returns>The is generic type ex.</returns>
+        /// <exception cref="System.ArgumentNullException">The <paramref name="type" /> is <c>null</c>.</exception>
         public static bool IsGenericTypeEx(this Type type)
         {
             Argument.IsNotNull("type", type);
@@ -472,6 +456,23 @@ namespace Catel.Reflection
 #endif
         }
 
+        /// <summary>
+        /// The is generic type definition ex.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <returns>The is generic type ex.</returns>
+        /// <exception cref="System.ArgumentNullException">The <paramref name="type" /> is <c>null</c>.</exception>
+        public static bool IsGenericTypeDefinitionEx(this Type type)
+        {
+            Argument.IsNotNull("type", type);
+
+#if NETFX_CORE || PCL
+            return type.GetTypeInfo().IsGenericTypeDefinition;
+#else
+            return type.IsGenericTypeDefinition;
+#endif
+        }
+        
         /// <summary>
         /// Returns whether the specified type implements the specified interface.
         /// </summary>
@@ -753,6 +754,40 @@ namespace Catel.Reflection
         }
 
         /// <summary>
+        /// Gets the member on the specified type.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="flattenHierarchy">The flatten hierarchy.</param>
+        /// <param name="allowStaticMembers">The allow static members.</param>
+        /// <returns>MemberInfo[][].</returns>
+        /// <exception cref="System.ArgumentNullException">The <paramref name="type" /> is <c>null</c>.</exception>
+        public static MemberInfo[] GetMemberEx(this Type type, string name, bool flattenHierarchy = true, bool allowStaticMembers = false)
+        {
+            return GetMemberEx(type, name, BindingFlagsHelper.GetFinalBindingFlags(flattenHierarchy, allowStaticMembers));
+        }
+
+        /// <summary>
+        /// Gets the member on the specified type.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="bindingFlags">The binding Flags.</param>
+        /// <returns>MemberInfo[][].</returns>
+        /// <exception cref="System.ArgumentNullException">The <paramref name="type" /> is <c>null</c>.</exception>
+        public static MemberInfo[] GetMemberEx(this Type type, string name, BindingFlags bindingFlags)
+        {
+            Argument.IsNotNull("type", type);
+
+#if ENABLE_CACHE
+            var cacheKey = new ReflectionCacheKey(type, ReflectionTypes.Member, bindingFlags, name);
+            return _fieldCache.GetFromCacheOrFetch(cacheKey, () => type.GetTypeInfo().GetMember(name, bindingFlags));
+#else
+            return type.GetTypeInfo().GetMember(name, bindingFlags);
+#endif
+        }
+
+        /// <summary>
         /// The get field ex.
         /// </summary>
         /// <param name="type">The type.</param>
@@ -780,6 +815,7 @@ namespace Catel.Reflection
         {
             Argument.IsNotNull("type", type);
             Argument.IsNotNullOrWhitespace("name", name);
+
 #if ENABLE_CACHE
             var cacheKey = new ReflectionCacheKey(type, ReflectionTypes.Field, bindingFlags, name);
             return _fieldCache.GetFromCacheOrFetch(cacheKey, () => type.GetTypeInfo().GetField(name, bindingFlags));
@@ -811,6 +847,7 @@ namespace Catel.Reflection
         public static FieldInfo[] GetFieldsEx(this Type type, BindingFlags bindingFlags)
         {
             Argument.IsNotNull("type", type);
+
 #if ENABLE_CACHE
             var cacheKey = new ReflectionCacheKey(type, ReflectionTypes.Field, bindingFlags);
             return _fieldsCache.GetFromCacheOrFetch(cacheKey, () => type.GetTypeInfo().GetFields(bindingFlags));
@@ -833,7 +870,7 @@ namespace Catel.Reflection
         public static PropertyInfo GetPropertyEx(this Type type, string name, bool flattenHierarchy = true, bool allowStaticMembers = false,
             bool allowExplicitInterfaceProperties = true)
         {
-            BindingFlags bindingFlags = BindingFlagsHelper.GetFinalBindingFlags(flattenHierarchy, allowStaticMembers);
+            var bindingFlags = BindingFlagsHelper.GetFinalBindingFlags(flattenHierarchy, allowStaticMembers);
             return GetPropertyEx(type, name, bindingFlags, allowExplicitInterfaceProperties);
         }
 
@@ -939,6 +976,7 @@ namespace Catel.Reflection
         {
             Argument.IsNotNullOrWhitespace("name", name);
             Argument.IsNotNull("type", type);
+
 #if ENABLE_CACHE
             var cacheKey = new ReflectionCacheKey(type, ReflectionTypes.Event, bindingFlags, name);
             return _eventCache.GetFromCacheOrFetch(cacheKey, () => type.GetTypeInfo().GetEvent(name, bindingFlags));
@@ -1046,9 +1084,7 @@ namespace Catel.Reflection
 #endif
 
 #else
-#if WP80
-            return type.GetTypeInfo().GetMethod(name, bindingFlags, null, types, null);
-#elif XAMARIN
+#if XAMARIN
             return type.GetTypeInfo().GetMethod(name, types);
 #else
             return type.GetTypeInfo().GetMethod(name, types, bindingFlags);
@@ -1088,7 +1124,7 @@ namespace Catel.Reflection
 #endif
         }
 
-#if NET40 || SILVERLIGHT
+#if NET40
 
         /// <summary>
         /// The type infos cache.
@@ -1103,15 +1139,9 @@ namespace Catel.Reflection
         /// <summary>
         /// Gets the type info.
         /// </summary>
-        /// <param name="this">
-        /// The this.
-        /// </param>
-        /// <returns>
-        /// The <see cref="TypeInfo"/> instance of the current <see cref="Type"/>.
-        /// </returns>
-        /// <exception cref="System.ArgumentNullException">
-        /// The <paramref name="this"/> is <c>null</c>.
-        /// </exception>
+        /// <param name="this">The this.</param>
+        /// <returns>The <see cref="TypeInfo" /> instance of the current <see cref="Type" />.</returns>
+        /// <exception cref="System.ArgumentNullException">The <paramref name="this" /> is <c>null</c>.</exception>
         public static TypeInfo GetTypeInfo(this Type @this)
         {
             Argument.IsNotNull("@this", @this);
@@ -1143,7 +1173,6 @@ namespace Catel.Reflection
             // TODO: Evaluate if just do 'return new TypeInfo(@this);' is enough
             return typeInfo;
         }
-
 #endif
     }
 }

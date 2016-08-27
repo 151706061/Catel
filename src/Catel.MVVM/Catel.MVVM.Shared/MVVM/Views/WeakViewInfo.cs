@@ -7,11 +7,9 @@
 namespace Catel.MVVM.Views
 {
     using System;
+    using Logging;
 
-#if NETFX_CORE && WIN80
-    using LoadedEventArgs = global::Windows.UI.Xaml.RoutedEventArgs;
-    using LayoutUpdatedEventArgs = System.Object;
-#elif NETFX_CORE
+#if NETFX_CORE
     using LoadedEventArgs = System.Object;
     using LayoutUpdatedEventArgs = System.Object;
 #else
@@ -26,6 +24,8 @@ namespace Catel.MVVM.Views
     public class WeakViewInfo
     {
         #region Fields
+        private static readonly ILog Log = LogManager.GetCurrentClassLogger();
+
         private WeakReference _view;
 
         private bool _isViewLoadState;
@@ -110,13 +110,6 @@ namespace Catel.MVVM.Views
         /// Occurs when the view is unloaded.
         /// </summary>
         public event EventHandler<EventArgs> Unloaded;
-
-#if SILVERLIGHT
-        /// <summary>
-        /// Occurs when the view layout is updated.
-        /// </summary>
-        public event EventHandler<EventArgs> LayoutUpdated;
-#endif
         #endregion
 
         #region Methods
@@ -128,13 +121,19 @@ namespace Catel.MVVM.Views
             IsLoaded = isViewLoaded;
             _isViewLoadState = viewObject is IViewLoadState;
 
-            this.SubscribeToWeakGenericEvent<LoadedEventArgs>(viewObject, "Loaded", OnViewLoadStateLoaded);
-            this.SubscribeToWeakGenericEvent<LoadedEventArgs>(viewObject, "Unloaded", OnViewLoadStateUnloaded);
+            if (this.SubscribeToWeakGenericEvent<LoadedEventArgs>(viewObject, "Loaded", OnViewLoadStateLoaded, false) == null)
+            {
+                Log.Debug("Failed to use weak events to subscribe to 'view.Loaded', going to subscribe without weak events");
 
-#if SILVERLIGHT
-            var view = View;
-            this.SubscribeToWeakGenericEvent<LayoutUpdatedEventArgs>(view, "LayoutUpdated", OnLayoutUpdated);
-#endif
+                ((IView) viewObject).Loaded += OnViewLoadStateLoaded;
+            }
+
+            if (this.SubscribeToWeakGenericEvent<LoadedEventArgs>(viewObject, "Unloaded", OnViewLoadStateUnloaded, false) == null)
+            {
+                Log.Debug("Failed to use weak events to subscribe to 'view.Unloaded', going to subscribe without weak events");
+
+                ((IView)viewObject).Unloaded += OnViewLoadStateUnloaded;
+            }
         }
 
         /// <summary>
@@ -208,22 +207,6 @@ namespace Catel.MVVM.Views
                 unloaded(this, EventArgs.Empty);
             }
         }
-
-#if SILVERLIGHT
-        /// <summary>
-        /// Called when the view layout is updated.
-        /// </summary>
-        /// <param name="sender">The sender.</param>
-        /// <param name="e">The <see cref="EventArgs" /> instance containing the event data.</param>
-        public void OnLayoutUpdated(object sender, LayoutUpdatedEventArgs e)
-        {
-            var layoutUpdated = LayoutUpdated;
-            if (layoutUpdated != null)
-            {
-                layoutUpdated(this, EventArgs.Empty);
-            }
-        }
-#endif
         #endregion
     }
 }

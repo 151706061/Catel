@@ -16,14 +16,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\DependencyObjectExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\ILogExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\IRegionManagerExtensions.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Helpers\HostHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Helpers\PrismHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IModuleTracker.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IRegionInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IViewInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ModuleInitializer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Modules\CompositeModuleCatalog.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Modules\CompositeNuGetBasedModuleCatalog.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Modules\DownloadingModuleCatalog.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Modules\EventArgs\ModuleEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Modules\Extensions\INuGetBasedModuleCatalogExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Modules\Extensions\ModuleCatalogExtensions.cs" />
@@ -42,10 +41,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)Modules\NuGet\RemoteInstallPackageRequest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Modules\SafeDirectoryModuleCatalog.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MVVM\Services\Extensions\ISplashScreenServiceExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MVVM\Services\Extensions\IUICompositionServiceExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MVVM\Services\Extensions\IUIVisualizerServiceExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MVVM\Services\Interfaces\IUICompositionService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MVVM\Services\UICompositionService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ServiceLocatorAdapter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)StandaloneBootstrapper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tasks\BootstrapperTaskFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tasks\Interfaces\IBootstrapperTaskFactory.cs" />
   </ItemGroup>

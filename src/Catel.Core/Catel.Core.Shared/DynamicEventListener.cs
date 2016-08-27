@@ -4,7 +4,7 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-#if NET || SL5
+#if NET
 
 namespace Catel
 {
@@ -25,6 +25,8 @@ namespace Catel
     /// but that doesn't work so the event delegate is created via ILGenerator at runtime.
     /// <para />
     /// http://stackoverflow.com/questions/8122085/calling-an-instance-method-when-event-occurs/8122242#8122242.
+    /// <para />
+    /// Original license: CC BY-SA 2.5, compatible with the MIT license.
     /// </remarks>
     public class DynamicEventListener : IUniqueIdentifyable
     {
@@ -156,10 +158,7 @@ namespace Catel
             _eventInfo = _eventInstanceType.GetEventEx(EventName, BindingFlagsHelper.GetFinalBindingFlags(true, false));
             if (_eventInfo == null)
             {
-                string error = string.Format("Cannot find the '{0}' event, implement the '{0}' event on '{1}'", EventName, _eventInstanceType.Name);
-                Log.Error(error);
-
-                throw new NotSupportedException(error);
+                throw Log.ErrorAndCreateException<NotSupportedException>("Cannot find the '{0}' event, implement the '{0}' event on '{1}'", EventName, _eventInstanceType.Name);
             }
 
             _handler = CreateDynamicHandlerDelegate(_eventInfo.EventHandlerType);
@@ -219,13 +218,13 @@ namespace Catel
         {
             if (!delegateType.HasBaseTypeEx(typeof(MulticastDelegate)))
             {
-                throw new InvalidOperationException("Not a delegate");
+                throw Log.ErrorAndCreateException<InvalidOperationException>("Not a delegate");
             }
 
             var invoke = delegateType.GetMethodEx("Invoke");
             if (invoke == null)
             {
-                throw new InvalidOperationException("Not a delegate");
+                throw Log.ErrorAndCreateException<InvalidOperationException>("Not a delegate");
             }
 
             var parameters = invoke.GetParameters();
@@ -245,17 +244,14 @@ namespace Catel
         public void OnEvent()
 // ReSharper restore UnusedMember.Global
         {
-            EventOccurred.SafeInvoke(this, EventArgs.Empty);
+            EventOccurred.SafeInvoke(this);
 
             if (_handlerInstance != null)
             {
                 var handlerMethodInfo = _handlerInstance.GetType().GetMethodEx(HandlerName, BindingFlagsHelper.GetFinalBindingFlags(true, false));
                 if (handlerMethodInfo == null)
                 {
-                    string error = string.Format("Cannot find the '{0}' method, implement the '{0}' method on '{1}'", EventName, _handlerInstance.GetType().Name);
-                    Log.Error(error);
-
-                    throw new NotSupportedException(error);
+                    throw Log.ErrorAndCreateException<NotSupportedException>("Cannot find the '{0}' method, implement the '{0}' method on '{1}'", EventName, _handlerInstance.GetType().Name);
                 }
 
                 handlerMethodInfo.Invoke(_handlerInstance, null);

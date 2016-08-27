@@ -34,12 +34,14 @@ namespace Catel.Data
         /// <param name="validateAttributes">If set to <c>true</c>, the validation attributes on the property will be validated.</param>
         /// <exception cref="PropertyNotNullableException">The property is not nullable, but <paramref name="value"/> is <c>null</c>.</exception>
         /// <exception cref="PropertyNotRegisteredException">The property is not registered.</exception>
-        internal void SetValue(string name, object value, bool notifyOnChange, bool validateAttributes)
+        //// TODO: turn in back to internal if is possible.
+        public void SetValue(string name, object value, bool notifyOnChange, bool validateAttributes)
         {
             var property = GetPropertyData(name);
             if ((value == null) && !property.Type.IsNullableType())
             {
-                throw new PropertyNotNullableException(name, GetType());
+                throw Log.ErrorAndCreateException(msg => new PropertyNotNullableException(name, GetType()),
+                    "Property '{0}' on type '{1}' is not nullable, cannot set value to null", name, GetType().FullName);
             }
 
             SetValue(property, value, notifyOnChange, validateAttributes);
@@ -94,7 +96,8 @@ namespace Catel.Data
                 {
                     if (!value.GetType().IsCOMObjectEx())
                     {
-                        throw new InvalidPropertyValueException(property.Name, property.Type, value.GetType());
+                        throw Log.ErrorAndCreateException(msg => new InvalidPropertyValueException(property.Name, property.Type, value.GetType()), 
+                            "Cannot set value '{0}' to property '{1}' of type '{2}', the value is invalid", value, property.Name, GetType().FullName);
                     }
                 }
             }
@@ -104,7 +107,7 @@ namespace Catel.Data
 
             lock (_propertyValuesLock)
             {
-                oldValue = GetValueFast(property.Name);
+                oldValue = GetValueFast<object>(property.Name);
                 var areOldAndNewValuesEqual = ObjectHelper.AreEqualReferences(oldValue, value);
 
                 if (notifyOnChange && (AlwaysInvokeNotifyChanged || !areOldAndNewValuesEqual) && !LeanAndMeanModel)
@@ -170,9 +173,12 @@ namespace Catel.Data
         /// </summary>
         /// <param name="propertyName">Name of the property.</param>
         /// <returns>The value of the property.</returns>
-        private object GetValueFast(string propertyName)
+        private T GetValueFast<T>(string propertyName)
         {
-            return _propertyBag.GetPropertyValue<object>(propertyName);
+            lock (_propertyValuesLock)
+            {
+                return _propertyBag.GetPropertyValue<T>(propertyName);
+            }
         }
 
         /// <summary>
@@ -222,7 +228,7 @@ namespace Catel.Data
                 return PropertyHelper.GetPropertyValue(this, property.Name);
             }
 
-            return GetValueFast(property.Name);
+            return GetValueFast<object>(property.Name);
         }
 
         /// <summary>
@@ -288,7 +294,7 @@ namespace Catel.Data
         /// </remarks>
         object IModelEditor.GetValueFastButUnsecure(string propertyName)
         {
-            return GetValueFast(propertyName);
+            return GetValueFast<object>(propertyName);
         }
 
         /// <summary>

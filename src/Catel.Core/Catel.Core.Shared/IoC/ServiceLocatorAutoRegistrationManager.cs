@@ -155,16 +155,16 @@ namespace Catel.IoC
                         var type = _pendingTypes.Dequeue();
 
                         ServiceLocatorRegistrationAttribute attribute;
-                        if (AttributeHelper.TryGetAttribute(type, out attribute))
+                        if (type.TryGetAttribute(out attribute))
                         {
-                            if (type.IsAbstractEx() || !attribute.InterfaceType.IsAssignableFromEx(type))
+                            // CTL-780: support open generics
+                            if (!type.IsGenericTypeEx() && (type.IsAbstractEx() || !attribute.InterfaceType.IsAssignableFromEx(type)))
                             {
-                                string message = string.Format("The type '{0}' is abstract or can't be registered as '{1}'", type, attribute.InterfaceType);
+                                var message = string.Format("The type '{0}' is abstract or can't be registered as '{1}'", type, attribute.InterfaceType);
 
                                 if (!IgnoreRuntimeIncorrectUsageOfRegisterAttribute)
                                 {
-                                    Log.Error(message);
-                                    throw new InvalidOperationException(message);
+                                    throw Log.ErrorAndCreateException<InvalidOperationException>(message);
                                 }
 
                                 Log.Warning(message);
@@ -184,7 +184,7 @@ namespace Catel.IoC
                                             var instance = typeFactory.CreateInstance(type);
                                             if (instance == null)
                                             {
-                                                Log.Error("Failed to instantiate type '{0}', cannot automatically register the instance", type.GetSafeFullName());
+                                                Log.Error("Failed to instantiate type '{0}', cannot automatically register the instance", type.GetSafeFullName(false));
                                             }
                                             else
                                             {
@@ -202,11 +202,9 @@ namespace Catel.IoC
                 }
                 catch (InvalidOperationException ex)
                 {
-                    Log.Error(ex, "Failed to inspect the pending types");
-
                     AutoRegisterTypesViaAttributes = false;
 
-                    throw;
+                    throw Log.ErrorAndCreateException<InvalidOperationException>(ex, "Failed to inspect the pending types");
                 }
                 finally
                 {

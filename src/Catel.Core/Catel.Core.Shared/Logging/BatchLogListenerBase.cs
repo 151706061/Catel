@@ -9,8 +9,8 @@ namespace Catel.Logging
 {
     using System;
     using System.Collections.Generic;
-    using System.Threading;
     using System.Threading.Tasks;
+    using Threading;
 
     /// <summary>
     /// Base class for log listeners that can write in batches.
@@ -20,7 +20,7 @@ namespace Catel.Logging
         #region Fields
         private readonly object _lock = new object();
 
-        private readonly Timer _timer;
+        private readonly Catel.Threading.Timer _timer;
         private List<LogBatchEntry> _logBatch = new List<LogBatchEntry>();
         #endregion
 
@@ -34,7 +34,7 @@ namespace Catel.Logging
             MaximumBatchCount = maxBatchCount;
 
             var interval = TimeSpan.FromSeconds(5);
-            _timer = new Timer(OnTimerTick, null, interval, interval);
+            _timer = new Catel.Threading.Timer(OnTimerTick, null, interval, interval);
         }
         #endregion
 
@@ -60,9 +60,11 @@ namespace Catel.Logging
         /// <param name="time">The time.</param>
         protected override void Write(ILog log, string message, LogEvent logEvent, object extraData, LogData logData, DateTime time)
         {
+            var logEntry = new LogBatchEntry(log, message, logEvent, extraData, logData, time);
+
             lock (_lock)
             {
-                _logBatch.Add(new LogBatchEntry(log, message, logEvent, extraData, logData, time));
+                _logBatch.Add(logEntry);
 
                 if (_logBatch.Count >= MaximumBatchCount)
                 {
@@ -106,8 +108,7 @@ namespace Catel.Logging
 
             if (batchToSubmit.Count > 0)
             {
-                // TODO: remove in 5.0.0
-                await WriteBatch(batchToSubmit);
+                await WriteBatchAsync(batchToSubmit);
             }
         }
 
@@ -116,8 +117,10 @@ namespace Catel.Logging
         /// </summary>
         /// <param name="batchEntries">The batch entries.</param>
         /// <returns>Task so this can be done asynchronously.</returns>
-        // TODO: change to abstract void in 5.0.0
-        protected abstract Task WriteBatch(List<LogBatchEntry> batchEntries);
+        protected virtual Task WriteBatchAsync(List<LogBatchEntry> batchEntries)
+        {
+            return TaskHelper.Completed;
+        }
         #endregion
     }
 }

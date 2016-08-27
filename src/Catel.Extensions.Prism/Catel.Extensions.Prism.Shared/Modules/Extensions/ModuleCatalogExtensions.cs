@@ -12,7 +12,12 @@ namespace Catel.Modules
     using System.Collections.Generic;
     using System.Linq;
     using Logging;
+
+#if PRISM6
+    using Prism.Modularity;
+#else
     using Microsoft.Practices.Prism.Modularity;
+#endif
     using Reflection;
 
     /// <summary>
@@ -76,7 +81,7 @@ namespace Catel.Modules
                 {
                     try
                     {
-                        var leafCatalogs = PropertyHelper.GetPropertyValue(moduleCatalog, "LeafCatalogs");
+                        var leafCatalogs = PropertyHelper.GetPropertyValue(moduleCatalog, "LeafCatalogs", false);
                         foreach (var leafCatalog in (IEnumerable)leafCatalogs)
                         {
                             var finalLeafCatalog = leafCatalog as IModuleCatalog;
@@ -88,7 +93,7 @@ namespace Catel.Modules
                     }
                     catch (Exception ex)
                     {
-                        Log.Warning(ex, "Failed to get LeafCatalogs from the (expected) composite catalog '{0}'", moduleCatalogType.GetSafeFullName());
+                        Log.Warning(ex, "Failed to get LeafCatalogs from the (expected) composite catalog '{0}'", moduleCatalogType.GetSafeFullName(false));
                     }
                 }
             }

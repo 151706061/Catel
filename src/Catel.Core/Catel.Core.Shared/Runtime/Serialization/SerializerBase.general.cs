@@ -11,6 +11,7 @@ namespace Catel.Runtime.Serialization
     using System.Collections;
     using System.Collections.Generic;
     using System.IO;
+    using System.Reflection;
     using Catel.ApiCop;
     using Catel.ApiCop.Rules;
     using Catel.Caching;
@@ -55,6 +56,14 @@ namespace Catel.Runtime.Serialization
 
         #region Fields
         private readonly CacheStorage<Type, SerializationModelInfo> _serializationModelCache = new CacheStorage<Type, SerializationModelInfo>();
+
+        private readonly CacheStorage<Type, bool> _shouldSerializeAsCollectionCache = new CacheStorage<Type, bool>();
+        private readonly CacheStorage<Type, bool> _shouldSerializeAsDictionaryCache = new CacheStorage<Type, bool>();
+        private readonly CacheStorage<Type, bool> _shouldSerializeByExternalSerializerCache = new CacheStorage<Type, bool>();
+        private readonly CacheStorage<string, bool> _shouldSerializeUsingParseCache = new CacheStorage<string, bool>();
+
+        private readonly CacheStorage<Type, MethodInfo> _parseMethodCache = new CacheStorage<Type, MethodInfo>();
+        private readonly CacheStorage<Type, MethodInfo> _toStringMethodCache = new CacheStorage<Type, MethodInfo>();
         #endregion
 
         #region Constructors
@@ -127,13 +136,13 @@ namespace Catel.Runtime.Serialization
             var modelType = model.GetType();
 
             // If a basic type, we need to directly deserialize as member and replace the context model
-            if (ShouldExternalSerializerHandleMember(context.ModelType, context.Model))
+            if (ShouldExternalSerializerHandleMember(context.ModelType))
             {
                 listToSerialize.Add(new MemberValue(SerializationMemberGroup.SimpleRootObject, modelType, modelType, RootObjectName, RootObjectName, model));
                 return listToSerialize;
             }
 
-            if (ShouldSerializeAsDictionary(modelType, model))
+            if (ShouldSerializeAsDictionary(modelType))
             {
                 // CTL-688: only support json for now. In the future, these checks (depth AND type) should be removed
                 if (SupportsDictionarySerialization(context))
@@ -143,7 +152,7 @@ namespace Catel.Runtime.Serialization
                 }
             }
 
-            if (ShouldSerializeAsCollection(modelType, model))
+            if (ShouldSerializeAsCollection(modelType))
             {
                 listToSerialize.Add(new MemberValue(SerializationMemberGroup.Collection, modelType, modelType, CollectionName, CollectionName, model));
                 return listToSerialize;
@@ -195,7 +204,6 @@ namespace Catel.Runtime.Serialization
                     continue;
                 }
 
-                // TODO: why get value but not store it?
                 var memberValue = ObjectAdapter.GetMemberValue(model, memberName, modelInfo);
                 if (memberValue != null)
                 {
@@ -230,11 +238,11 @@ namespace Catel.Runtime.Serialization
         public void Warmup(IEnumerable<Type> types, int typesPerThread = 1000)
         {
             ApiCop.UpdateRule<InitializationApiCopRule>("SerializerBase.WarmupAtStartup",
-                x => x.SetInitializationMode(InitializationMode.Eager, GetType().GetSafeFullName()));
+                x => x.SetInitializationMode(InitializationMode.Eager, GetType().GetSafeFullName(false)));
 
             if (types == null)
             {
-                types = TypeCache.GetTypes(x => typeof(ModelBase).IsAssignableFromEx(x));
+                types = TypeCache.GetTypes(x => x.IsModelBase());
             }
 
             var allTypes = new List<Type>(types);
@@ -425,6 +433,23 @@ namespace Catel.Runtime.Serialization
             return null;
         }
 
+
+        /// <summary>
+        /// Returns whether the model should be serialized as collection. Note that this method will
+        /// return <c>false</c> if the method does not derive from <c>ModelBase</c>.
+        /// </summary>
+        /// <param name="memberType">Type of the member.</param>
+        /// <returns><c>true</c> if the model should be serialized as a collection, <c>false</c> otherwise.</returns>
+        protected virtual bool ShouldSerializeModelAsCollection(Type memberType)
+        {
+            if (memberType.IsDecoratedWithAttribute<SerializeAsCollectionAttribute>())
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Returns whether the member value should be serialized as collection.
         /// </summary>
@@ -437,42 +462,64 @@ namespace Catel.Runtime.Serialization
                 return true;
             }
 
-            return ShouldSerializeAsCollection(memberValue.ActualMemberType ?? memberValue.MemberType, memberValue.Value);
+            return ShouldSerializeAsCollection(memberValue.GetBestMemberType());
         }
 
         /// <summary>
         /// Returns whether the member value should be serialized as collection.
         /// </summary>
         /// <param name="memberType">Type of the member.</param>
-        /// <param name="memberValue">The member value.</param>
         /// <returns><c>true</c> if the member value should be serialized as collection, <c>false</c> otherwise.</returns>
-        protected virtual bool ShouldSerializeAsCollection(Type memberType, object memberValue)
+        protected virtual bool ShouldSerializeAsCollection(Type memberType)
         {
-            if (memberType == typeof(byte[]))
+            return _shouldSerializeAsCollectionCache.GetFromCacheOrFetch(memberType, () =>
             {
-                return false;
-            }
+                var serializerModifiers = SerializationManager.GetSerializerModifiers(memberType);
+                if (serializerModifiers != null)
+                {
+                    foreach (var serializerModifier in serializerModifiers)
+                    {
+                        var shouldSerializeAsCollection = serializerModifier.ShouldSerializeAsCollection();
+                        if (shouldSerializeAsCollection.HasValue)
+                        {
+                            return shouldSerializeAsCollection.Value;
+                        }
+                    }
+                }
 
-            if (memberType.IsCollection())
-            {
-                return true;
-            }
+                if (memberType == typeof(byte[]))
+                {
+                    return false;
+                }
 
-            if (memberType == typeof(IEnumerable))
-            {
-                return true;
-            }
+                // An exception is ModelBase, we will always serialize ourselves (even when it is a collection)
+                if (memberType.IsModelBase())
+                {
+                    return ShouldSerializeModelAsCollection(memberType);
+                }
 
-            if (memberType.IsGenericTypeEx())
-            {
-                var genericDefinition = memberType.GetGenericTypeDefinitionEx();
-                if (genericDefinition == typeof(IEnumerable<>) || typeof(IEnumerable<>).IsAssignableFromEx(genericDefinition))
+                if (memberType.IsCollection())
                 {
                     return true;
                 }
-            }
 
-            return false;
+                if (memberType == typeof(IEnumerable))
+                {
+                    return true;
+                }
+
+                if (memberType.IsGenericTypeEx())
+                {
+                    var genericDefinition = memberType.GetGenericTypeDefinitionEx();
+                    if (genericDefinition == typeof(IEnumerable<>) ||
+                        typeof(IEnumerable<>).IsAssignableFromEx(genericDefinition))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            });
         }
 
         /// <summary>
@@ -487,23 +534,117 @@ namespace Catel.Runtime.Serialization
                 return true;
             }
 
-            return ShouldSerializeAsDictionary(memberValue.ActualMemberType ?? memberValue.MemberType, memberValue.Value);
+            return ShouldSerializeAsDictionary(memberValue.GetBestMemberType());
         }
 
         /// <summary>
         /// Returns whether the member value should be serialized as dictionary.
         /// </summary>
         /// <param name="memberType">Type of the member.</param>
-        /// <param name="memberValue">The member value.</param>
         /// <returns><c>true</c> if the member value should be serialized as dictionary, <c>false</c> otherwise.</returns>
-        protected virtual bool ShouldSerializeAsDictionary(Type memberType, object memberValue)
+        protected virtual bool ShouldSerializeAsDictionary(Type memberType)
         {
-            if (memberType.IsDictionary())
+            return _shouldSerializeAsDictionaryCache.GetFromCacheOrFetch(memberType, () =>
             {
-                return true;
-            }
+                var serializerModifiers = SerializationManager.GetSerializerModifiers(memberType);
+                if (serializerModifiers != null)
+                {
+                    foreach (var serializerModifier in serializerModifiers)
+                    {
+                        var shouldSerializeAsDictionary = serializerModifier.ShouldSerializeAsDictionary();
+                        if (shouldSerializeAsDictionary.HasValue)
+                        {
+                            return shouldSerializeAsDictionary.Value;
+                        }
+                    }
+                }
 
-            return false;
+                if (memberType.IsDictionary())
+                {
+                    return true;
+                }
+
+                return false;
+            });
+        }
+
+        /// <summary>
+        /// Returns whether the member value should be serialized using <c>ToString(IFormatProvider)</c> and deserialized using <c>Parse(string, IFormatProvider)</c>.
+        /// </summary>
+        /// <param name="memberValue">The member value.</param>
+        /// <param name="checkActualMemberType">if set to <c>true</c>, check the actual member type.</param>
+        /// <returns>
+        ///   <c>true</c> if the member should be serialized using parse.
+        /// </returns>
+        protected virtual bool ShouldSerializeUsingParse(MemberValue memberValue, bool checkActualMemberType)
+        {
+            var cacheKey = $"{memberValue.ModelTypeName}|{memberValue.MemberTypeName}|{checkActualMemberType}";
+
+            return _shouldSerializeUsingParseCache.GetFromCacheOrFetch(cacheKey, () =>
+            {
+                var serializerModifiers = SerializationManager.GetSerializerModifiers(memberValue.ModelType);
+
+                foreach (var serializerModifier in serializerModifiers)
+                {
+                    var value = serializerModifier.ShouldSerializeMemberUsingParse(memberValue);
+                    if (value.HasValue && !value.Value)
+                    {
+                        return false;
+                    }
+                }
+
+                var memberType = checkActualMemberType ? memberValue.ActualMemberType : memberValue.MemberType;
+                if (memberType == null)
+                {
+                    memberType = memberValue.MemberType;
+                }
+
+                var toStringMethod = GetObjectToStringMethod(memberType);
+                if (toStringMethod == null)
+                {
+                    return false;
+                }
+
+                var parseMethod = GetObjectParseMethod(memberType);
+                if (parseMethod == null)
+                {
+                    return false;
+                }
+
+                return true;
+            });
+        }
+
+        /// <summary>
+        /// Gets the <c>ToString(IFormatProvider)</c> method.
+        /// </summary>
+        /// <param name="memberType">Type of the member.</param>
+        /// <returns></returns>
+        protected virtual MethodInfo GetObjectToStringMethod(Type memberType)
+        {
+            var toStringMethod = _toStringMethodCache.GetFromCacheOrFetch(memberType, () =>
+            {
+                var method = memberType.GetMethodEx("ToString", new[] { typeof(IFormatProvider) }, BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
+                return method;
+            });
+
+            return toStringMethod;
+        }
+
+        /// <summary>
+        /// Gets the <c>Parse(string, IFormatProvider)</c> method.
+        /// </summary>
+        /// <param name="memberType">Type of the member.</param>
+        /// <returns></returns>
+        protected virtual MethodInfo GetObjectParseMethod(Type memberType)
+        {
+            var parseMethod = _parseMethodCache.GetFromCacheOrFetch(memberType, () =>
+            {
+                var method = memberType.GetMethodEx("Parse", new[] { typeof(string), typeof(IFormatProvider) }, BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
+                return method;
+            });
+
+            return parseMethod;
         }
 
         /// <summary>
@@ -553,7 +694,7 @@ namespace Catel.Runtime.Serialization
                 return false;
             }
 
-            return ShouldExternalSerializerHandleMember(memberValue.ActualMemberType ?? memberValue.MemberType, memberValue.Value);
+            return ShouldExternalSerializerHandleMember(memberValue.GetBestMemberType());
         }
 
         /// <summary>
@@ -562,41 +703,43 @@ namespace Catel.Runtime.Serialization
         /// By default it only handles non-class types.
         /// </summary>
         /// <param name="memberType">Type of the member.</param>
-        /// <param name="memberValue">The member value.</param>
         /// <returns><c>true</c> if json.net should handle the type, <c>false</c> otherwise.</returns>
-        protected virtual bool ShouldExternalSerializerHandleMember(Type memberType, object memberValue)
+        protected virtual bool ShouldExternalSerializerHandleMember(Type memberType)
         {
-            if (memberType == typeof(IEnumerable))
+            return _shouldSerializeByExternalSerializerCache.GetFromCacheOrFetch(memberType, () =>
             {
+                if (memberType == typeof(IEnumerable))
+                {
+                    return false;
+                }
+
+                if (!memberType.IsClassType())
+                {
+                    return true;
+                }
+
+                if (memberType == typeof(string))
+                {
+                    return true;
+                }
+
+                if (memberType == typeof(Guid))
+                {
+                    return true;
+                }
+
+                if (memberType == typeof(Uri))
+                {
+                    return true;
+                }
+
+                if (memberType == typeof(byte[]))
+                {
+                    return true;
+                }
+
                 return false;
-            }
-
-            if (!memberType.IsClassType())
-            {
-                return true;
-            }
-
-            if (memberType == typeof(string))
-            {
-                return true;
-            }
-
-            if (memberType == typeof(Guid))
-            {
-                return true;
-            }
-
-            if (memberType == typeof(Uri))
-            {
-                return true;
-            }
-
-            if (memberType == typeof(byte[]))
-            {
-                return true;
-            }
-
-            return false;
+            });
         }
 
         /// <summary>
@@ -626,6 +769,7 @@ namespace Catel.Runtime.Serialization
             if (type.IsArrayEx())
             {
                 elementType = type.GetElementTypeEx();
+                return Array.CreateInstance(elementType, 0);
             }
 
             if (type.IsGenericTypeEx() && typeof(IEnumerable<>) == type.GetGenericTypeDefinitionEx())

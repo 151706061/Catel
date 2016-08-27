@@ -4,7 +4,7 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-#if NET || SL5 || NETFX_CORE
+#if NET || NETFX_CORE
 
 namespace Catel.Windows.Controls
 {
@@ -93,7 +93,7 @@ namespace Catel.Windows.Controls
                 OnUnloaded(e);
             };
 
-            this.AddDataContextChangedHandler((sender, e) => _viewDataContextChanged.SafeInvoke(this, new Catel.MVVM.Views.DataContextChangedEventArgs(e.OldValue, e.NewValue)));
+            this.AddDataContextChangedHandler((sender, e) => _viewDataContextChanged.SafeInvoke(this, () => new Catel.MVVM.Views.DataContextChangedEventArgs(e.OldValue, e.NewValue)));
         }
         #endregion
 
@@ -183,7 +183,7 @@ namespace Catel.Windows.Controls
             OnViewModelChanged();
 
             ViewModelChanged.SafeInvoke(this);
-            PropertyChanged.SafeInvoke(this, new PropertyChangedEventArgs("ViewModel"));
+            PropertyChanged.SafeInvoke(this, () => new PropertyChangedEventArgs("ViewModel"));
         }
 
         /// <summary>

@@ -27,19 +27,32 @@ namespace Catel.MVVM.Navigation
         /// Initializes a new instance of the <see cref="NavigationAdapter" /> class.
         /// </summary>
         /// <param name="navigationTarget">The navigation target.</param>
-        public NavigationAdapter(IView navigationTarget)
+        /// <param name="navigationRoot">The navigation root.</param>
+        public NavigationAdapter(IView navigationTarget, object navigationRoot)
         {
             Argument.IsNotNull("navigationTarget", navigationTarget);
 
             NavigationTarget = navigationTarget;
             NavigationTargetType = navigationTarget.GetType();
+            NavigationRoot = navigationRoot;
             NavigationContext = new NavigationContext();
+            HandleNavigatedOnLoaded = true;
+
+            InitializeNavigationService(false);
 
             // Listen to loaded because not every framework already has the application at this stage
             NavigationTarget.Loaded += OnNavigationTargetLoaded;
         }
 
         #region Properties
+        /// <summary>
+        /// Gets or sets a value indicating whether the navigated event should be invoked on the loaded event.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if navigation should be handled on loaded event; otherwise, <c>false</c>.
+        /// </value>
+        private bool HandleNavigatedOnLoaded { get; set; }
+
         /// <summary>
         /// Gets the navigation target.
         /// </summary>
@@ -51,6 +64,12 @@ namespace Catel.MVVM.Navigation
         /// </summary>
         /// <value>The type of the navigation target.</value>
         public Type NavigationTargetType { get; private set; }
+
+        /// <summary>
+        /// Gets the navigation root.
+        /// </summary>
+        /// <value>The navigation root.</value>
+        public object NavigationRoot { get; private set; }
 
         /// <summary>
         /// Gets the navigation context.
@@ -99,7 +118,7 @@ namespace Catel.MVVM.Navigation
 
             _navigationServiceInitialized = true;
 
-            if (isComingFromLoadedEvent)
+            if (isComingFromLoadedEvent && HandleNavigatedOnLoaded)
             {
                 var eventArgs = new NavigatedEventArgs(string.Empty, NavigationMode.New);
                 RaiseNavigatedTo(eventArgs);

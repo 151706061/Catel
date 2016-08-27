@@ -9,9 +9,11 @@ namespace Catel.Runtime.Serialization
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using ApiCop.Rules;
+    using Collections;
     using IoC;
     using Logging;
     using Data;
@@ -141,7 +143,7 @@ namespace Catel.Runtime.Serialization
 
             var serializerModifiers = SerializationManager.GetSerializerModifiers(context.ModelType);
 
-            Log.Debug("Using '{0}' serializer modifiers to deserialize type '{1}'", serializerModifiers.Length, context.ModelType.GetSafeFullName());
+            Log.Debug("Using '{0}' serializer modifiers to deserialize type '{1}'", serializerModifiers.Length, context.ModelTypeName);
 
             var serializingEventArgs = new SerializationEventArgs(context);
 
@@ -270,7 +272,7 @@ namespace Catel.Runtime.Serialization
         protected virtual List<MemberValue> DeserializeMembers(ISerializationContext<TSerializationContext> context)
         {
             ApiCop.UpdateRule<InitializationApiCopRule>("SerializerBase.WarmupAtStartup",
-                x => x.SetInitializationMode(InitializationMode.Lazy, GetType().GetSafeFullName()));
+                x => x.SetInitializationMode(InitializationMode.Lazy, GetType().GetSafeFullName(false)));
 
             var deserializedMemberValues = new List<MemberValue>();
 
@@ -289,7 +291,7 @@ namespace Catel.Runtime.Serialization
                 if (serializationObject.IsSuccessful)
                 {
                     // Note that we need to sync the member values every time
-                    var memberValue = new MemberValue(member.MemberGroup, member.ModelType, member.MemberType, member.Name, 
+                    var memberValue = new MemberValue(member.MemberGroup, member.ModelType, member.MemberType, member.Name,
                         member.NameForSerialization, serializationObject.MemberValue);
 
                     if (memberValue.MemberGroup == SerializationMemberGroup.Dictionary)
@@ -297,8 +299,8 @@ namespace Catel.Runtime.Serialization
                         var targetDictionary = TypeFactory.CreateInstance(member.MemberType) as IDictionary;
                         if (targetDictionary == null)
                         {
-                            Log.ErrorAndThrowException<NotSupportedException>("'{0}' seems to be a dictionary, but target model cannot be updated because it does not implement IDictionary",
-                                context.ModelType.GetSafeFullName());
+                            throw Log.ErrorAndCreateException<NotSupportedException>("'{0}' seems to be a dictionary, but target model cannot be updated because it does not implement IDictionary",
+                                context.ModelTypeName);
                         }
 
                         var enumerable = memberValue.Value as List<SerializableKeyValuePair>;
@@ -325,25 +327,32 @@ namespace Catel.Runtime.Serialization
                     }
                     else if (memberValue.MemberGroup == SerializationMemberGroup.Collection)
                     {
-                        // TODO: support arrays
-
-                        var targetCollection = TypeFactory.CreateInstance(member.MemberType) as IList;
-                        if (targetCollection == null)
-                        {
-                            Log.ErrorAndThrowException<NotSupportedException>("'{0}' seems to be a collection, but target model cannot be updated because it does not implement IList",
-                                context.ModelType.GetSafeFullName());
-                        }
-
                         var sourceCollection = memberValue.Value as IEnumerable;
-                        if (sourceCollection != null)
-                        {
-                            foreach (var item in sourceCollection)
-                            {
-                                targetCollection.Add(item);
-                            }
-                        }
 
-                        member.Value = targetCollection;
+                        if (member.MemberType.IsArrayEx())
+                        {
+                            var elementType = member.MemberType.GetElementTypeEx();
+                            member.Value = sourceCollection.ToArray(elementType);
+                        }
+                        else
+                        {
+                            var targetCollection = TypeFactory.CreateInstance(member.MemberType) as IList;
+                            if (targetCollection == null)
+                            {
+                                throw Log.ErrorAndCreateException<NotSupportedException>("'{0}' seems to be a collection, but target model cannot be updated because it does not implement IList",
+                                    context.ModelTypeName);
+                            }
+
+                            if (sourceCollection != null)
+                            {
+                                foreach (var item in sourceCollection)
+                                {
+                                    targetCollection.Add(item);
+                                }
+                            }
+
+                            member.Value = targetCollection;
+                        }
                     }
                     else
                     {
@@ -379,8 +388,8 @@ namespace Catel.Runtime.Serialization
                     var targetDictionary = context.Model as IDictionary;
                     if (targetDictionary == null)
                     {
-                        Log.ErrorAndThrowException<NotSupportedException>("'{0}' seems to be a dictionary, but target model cannot be updated because it does not implement IDictionary",
-                            context.ModelType.GetSafeFullName());
+                        throw Log.ErrorAndCreateException<NotSupportedException>("'{0}' seems to be a dictionary, but target model cannot be updated because it does not implement IDictionary",
+                            context.ModelTypeName);
                     }
 
                     targetDictionary.Clear();
@@ -396,21 +405,28 @@ namespace Catel.Runtime.Serialization
                 }
                 else if (firstMember.MemberGroup == SerializationMemberGroup.Collection)
                 {
-                    var targetCollection = context.Model as IList;
-                    if (targetCollection == null)
+                    if (context.ModelType.IsArrayEx())
                     {
-                        Log.ErrorAndThrowException<NotSupportedException>("'{0}' seems to be a collection, but target model cannot be updated because it does not implement IList",
-                            context.ModelType.GetSafeFullName());
+                        context.Model = firstMember.Value;
                     }
-
-                    targetCollection.Clear();
-
-                    var sourceCollection = firstMember.Value as IEnumerable;
-                    if (sourceCollection != null)
+                    else
                     {
-                        foreach (var item in sourceCollection)
+                        var targetCollection = context.Model as IList;
+                        if (targetCollection == null)
                         {
-                            targetCollection.Add(item);
+                            throw Log.ErrorAndCreateException<NotSupportedException>("'{0}' seems to be a collection, but target model cannot be updated because it does not implement IList",
+                                context.ModelTypeName);
+                        }
+
+                        targetCollection.Clear();
+
+                        var sourceCollection = firstMember.Value as IEnumerable;
+                        if (sourceCollection != null)
+                        {
+                            foreach (var item in sourceCollection)
+                            {
+                                targetCollection.Add(item);
+                            }
                         }
                     }
                 }
@@ -421,6 +437,37 @@ namespace Catel.Runtime.Serialization
             }
 
             return deserializedMemberValues;
+        }
+
+        /// <summary>
+        /// Deserializes the object using the <c>Parse(string, IFormatProvider)</c> method.
+        /// </summary>
+        /// <returns>The deserialized object.</returns>
+        protected virtual object DeserializeUsingObjectParse(ISerializationContext<TSerializationContext> context, MemberValue memberValue)
+        {
+            // Note: don't use GetBestMemberType, it could return string type
+            var parseMethod = GetObjectParseMethod(memberValue.MemberType);
+            if (parseMethod == null)
+            {
+                return null;
+            }
+
+            var memberValueAsString = memberValue.Value as string;
+            if (memberValueAsString == null)
+            {
+                return null;
+            }
+            
+            try
+            {
+                var obj = parseMethod.Invoke(null, new object[] { memberValueAsString, CultureInfo.InvariantCulture });
+                return obj;
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, $"Failed to deserialize type '{memberValue.GetBestMemberType().GetSafeFullName(false)}' using Parse(string, IFormatProvider)");
+                return null;
+            }
         }
         #endregion
     }

@@ -16,14 +16,76 @@ License:         http://www.catelproject.com/about/license
 **********************************************************
 
 ==================
-Version 4.3.0
+Version 5.0.0
+==================
+
+For an upgrade guide, visit https://catelproject.atlassian.net/wiki/display/CTL/Update+guides
+
+Release date:
+=============
+2016/xx/xx
+
+Added/fixed (BREAKING CHANGES):
+===============================
+-
+
+Platform support changes:
+=========================
+Dropped support for the following platforms:
+* Silverlight 5
+* Windows Phone 8.0 (Silverlight)
+* Windows Phone 8.1 (Silverlight)
+* Windows Phone 8.1 (Runtime)
+* Windows 8.1 (Runtime)
+
+Dropped support for the following components:
+* Catel.Extensions.CSLA
+* Catel.Extensions.Wcf.Server
+* Catel.Extensions.Prism4
+* Catel.Extensions.Interception
+* Catel.Extensions.Memento (moved to Orc.Memento)
+* Catel.Extensions.MVC4
+* Catel.Extensions.MVC5
+
+Classes / members marked as obsolete:
+=====================================
+Our mission is to make Catel easier to maintain in the future. One way to achieve this is to remove unused
+features and components. We are actively removing features by marking them obsolete. If nobody complains,
+we will remove the features in the next major release.
+
+-
+
+Added/fixed:
+============
+(+) CTL-902 Allow custom management of serializer modifiers in the ISerializerManager
+(+) CTL-907 Support classes that implement Parse(string, IFormatProvider) and ToString(IFormatProvider) in the serializers 
+(*) CTL-903 Only support Frame and not NavigationWindow for WPF navigation
+(*) CTL-905 Always log Argument logging (even when Catel logging is being ignored)
+(*) CTL-911 Refactor UrlHelper to extension methods
+(x) CTL-899 Navigation in WPF is not working when using custom frame
+(x) CTL-906 Clear current navigation context when (re)navigating to the same view in WPF
+(x) CTL-910 Introduce special lock for null keys in CacheStorage to prevent ArgumentNullException
+(-) Removed test implementations of services
+
+Roadmap:
+========
+See http://www.catelproject.com/support/issue-tracker
+
+Known issues:
+=============
+See http://www.catelproject.com/support/issue-tracker
+
+**********************************************************
+
+==================
+Version 4.5.2
 ==================
 
 For an update guide, visit https://catelproject.atlassian.net/wiki/display/CTL/Update+guides
 
 Release date:
 =============
-2015/xx/xx
+2016/07/29
 
 Added/fixed (BREAKING CHANGES):
 ===============================
@@ -33,7 +95,288 @@ marked as obsolete and have an async handler which must be used in the future.
 
 Platform support changes:
 =========================
-xxx
+[none]
+
+Classes / members marked as obsolete:
+=====================================
+Our mission is to make Catel easier to maintain in the future. One way to achieve this is to remove unused
+features and components. We are actively removing features by marking them obsolete. If nobody complains,
+we will remove the features in the next major release.
+
+* CTL-671 Marked Catel.Extensions.CSLA as obsolete to minimize maintenance costs of Catel
+* CTL-672 Marked Catel.Extensions.Wcf.Server as obsolete to minimize maintenance costs of Catel
+* CTL-740 Marked IMessageMediator.SendMessageAsync as obsolete because it's not truly async
+* CTL-755 Marked Catel.Windows.Controls.ScrollViewerProperties as obsolete to minimize maintenance costs of Catel
+* CTL-756 Marked Catel.Windows.Controls.RichToolTip as obsolete to minimize maintenance costs of Catel
+* CTL-784 Marked AttributeHelper as obsolete, use reflection extensions instead
+* CTL-808 Marked AsynchronousCommand as obsolete, use TaskCommand instead
+* CTL-810 Marked QueryableExtensions.Include(Expression) as obsolete for EF6 and higher, use the default EF implementation
+* CTL-849 Marked ExpressionUtil obsolete, use ExpressionHelper instead
+
+Added/fixed:
+============
+(+) CTL-907 Support classes that implement Parse(string, IFormatProvider) and ToString(IFormatProvider) in the serializers 
+(x) CTL-906 Clear current navigation context when (re)navigating to the same view in WPF
+
+Roadmap:
+========
+See http://www.catelproject.com/support/issue-tracker
+
+Known issues:
+=============
+See http://www.catelproject.com/support/issue-tracker
+
+**********************************************************
+
+==================
+Version 4.5.1
+==================
+
+For an upgrade guide, visit https://catelproject.atlassian.net/wiki/display/CTL/Update+guides
+
+Release date:
+=============
+2016/07/22
+
+Added/fixed (BREAKING CHANGES):
+===============================
+No breaking changes, but made a lot of preparations for the "async big bang" that will happen in Catel 5.0. We are
+currently trying to index all members that might need async members in the future. Most of these members are now
+marked as obsolete and have an async handler which must be used in the future.
+
+Platform support changes:
+=========================
+[none]
+
+Classes / members marked as obsolete:
+=====================================
+Our mission is to make Catel easier to maintain in the future. One way to achieve this is to remove unused
+features and components. We are actively removing features by marking them obsolete. If nobody complains,
+we will remove the features in the next major release.
+
+* CTL-671 Marked Catel.Extensions.CSLA as obsolete to minimize maintenance costs of Catel
+* CTL-672 Marked Catel.Extensions.Wcf.Server as obsolete to minimize maintenance costs of Catel
+* CTL-740 Marked IMessageMediator.SendMessageAsync as obsolete because it's not truly async
+* CTL-755 Marked Catel.Windows.Controls.ScrollViewerProperties as obsolete to minimize maintenance costs of Catel
+* CTL-756 Marked Catel.Windows.Controls.RichToolTip as obsolete to minimize maintenance costs of Catel
+* CTL-784 Marked AttributeHelper as obsolete, use reflection extensions instead
+* CTL-808 Marked AsynchronousCommand as obsolete, use TaskCommand instead
+* CTL-810 Marked QueryableExtensions.Include(Expression) as obsolete for EF6 and higher, use the default EF implementation
+* CTL-849 Marked ExpressionUtil obsolete, use ExpressionHelper instead
+
+Added/fixed:
+============
+(+) CTL-902 Allow custom management of serializer modifiers in the ISerializerManager
+(*) CTL-903 Only support Frame and not NavigationWindow for WPF navigation
+(x) CTL-899 Navigation in WPF is not working when using custom frame
+
+Roadmap:
+========
+See http://www.catelproject.com/support/issue-tracker
+
+Known issues:
+=============
+See http://www.catelproject.com/support/issue-tracker
+
+**********************************************************
+
+==================
+Version 4.5.0
+==================
+
+For an update guide, visit https://catelproject.atlassian.net/wiki/display/CTL/Update+guides
+
+Release date:
+=============
+2016/07/01
+
+Added/fixed (BREAKING CHANGES):
+===============================
+No breaking changes, but made a lot of preparations for the "async big bang" that will happen in Catel 5.0. We are
+currently trying to index all members that might need async members in the future. Most of these members are now
+marked as obsolete and have an async handler which must be used in the future.
+
+Platform support changes:
+=========================
+[none]
+
+Classes / members marked as obsolete:
+=====================================
+Our mission is to make Catel easier to maintain in the future. One way to achieve this is to remove unused
+features and components. We are actively removing features by marking them obsolete. If nobody complains,
+we will remove the features in the next major release.
+
+* CTL-671 Marked Catel.Extensions.CSLA as obsolete to minimize maintenance costs of Catel
+* CTL-672 Marked Catel.Extensions.Wcf.Server as obsolete to minimize maintenance costs of Catel
+* CTL-740 Marked IMessageMediator.SendMessageAsync as obsolete because it's not truly async
+* CTL-755 Marked Catel.Windows.Controls.ScrollViewerProperties as obsolete to minimize maintenance costs of Catel
+* CTL-756 Marked Catel.Windows.Controls.RichToolTip as obsolete to minimize maintenance costs of Catel
+* CTL-784 Marked AttributeHelper as obsolete, use reflection extensions instead
+* CTL-808 Marked AsynchronousCommand as obsolete, use TaskCommand instead
+* CTL-810 Marked QueryableExtensions.Include(Expression) as obsolete for EF6 and higher, use the default EF implementation
+* CTL-849 Marked ExpressionUtil obsolete, use ExpressionHelper instead
+
+Added/fixed:
+============
+(+) CTL-622 Add check type sorting and expression filter on ExceptionService
+(+) CTL-788 Added new LogEvent called Status which can be used for status updates
+(+) CTL-796 Add Activate existing window methods in IUIVisualizerService
+(+) CTL-803 Add RegisterHandler method on IExceptionService
+(+) CTL-805 Add IExceptionHandler<T> to make implementation of custom exception handlers easier
+(+) CTL-809 Add CreateTaskCommand method on CommandHelper
+(+) CTL-817 Add DynamicObservableObject implementation
+(+) CTL-832 Added ProgressContext to easily allow progress calculation
+(+) CTL-745 Allow DataWindowButton to be bindable (both text and visibility)
+(+) CTL-842 Add events to ICacheStorage when items are removed from the cache
+(+) CTL-843 Add ToString implementation for ValidationContext and ValidationSummary
+(+) CTL-844 Create Enum<TEnum>.Flags.GetValues(TEnum enum) to retrieve list of flags
+(+) CTL-848 CacheStorage - automatically dispose item on removing
+(+) CTL-861 Add tag overload to IViewModelFactory to allow resolving of dependencies using tags
+(+) CTL-873 Allow ConfigurationService to store values in separate containers (local and roaming)
+(+) CTL-883 Create magic "ViewModelContainer" name so you can define your own view model grid
+(*) CTL-785 Support expressions in validation result static members so you can now write
+    FieldValidationResult.CreateWarning(() => MyProperty, "This field is required");
+(*) CTL-789 Improve property handling in the context of RegisterProperties
+(*) CTL-792 Improve property editing performance
+(*) CTL-794 Allow application-wide commands to be executed when child windows have a focus
+(*) CTL-797 Only set owner window for modal dialogs in UIVisualizerService
+(*) CTL-800 UpdatableMarkupExtension should expose IServiceProvider in the ProvideDynamicValue method
+(*) CTL-802 Add async version of OnOkExecute to DataWindow
+(*) CTL-806 Allow ValueConverterGroup to contain System.Windows.IValueConverter objects
+(*) CTL-807 Support enum values in ConfigurationService (and StringToObjectHelper)
+(*) CTL-810 Marked QueryableExtensions.Include(Expression) as obsolete for EF6 and higher
+(*) CTL-814 Improve Argument.IsValid implementation to allow more options
+(*) CTL-819 Prevent unnecessary creation of event args in .SafeInvoke when handler is null
+(*) CTL-824 ModelBase.editableobject should check for duplicated BeginEdit(), EndEdit(), CancelEdit()
+(*) CTL-825 Use NuGet package for behaviors SDK instead of local reference for UWP
+(*) CTL-828 Prevent unneccessary creation of empty dictionary entries in ModelBase
+(*) CTL-846 ObjectConverterService (and thus ConfigurationService) should respect culture on UWP
+(*) CTL-850 Don't set AssociatedObject to null in IBehavior.Detach for UWP
+(*) CTL-856 Improved FastObservableCollection to have concrete suspension modes for change notifications
+(*) CTL-859 When resolving types from the service locator (for dependency injection), prefer registered 
+    types with the right scope
+(*) CTL-886 Support AsyncLock in CacheStorage so async retrieval is covered by locks as well
+(*) CTL-895 Removing CurrentDispatcher property from IDispatcherService interface. Adding methods to IDispatcher 
+    that ensures backward capability
+(x) CTL-791 Types with the same FullName from different assemblies will cause issues with the TypeFactory cache
+(x) CTL-793 CompositeCommand.CheckCanExecuteOfAllCommandsToDetermineCanExecuteForCompositeCommand not respected
+(x) CTL-798 Prevent MissingResourceException when resolving strings for Catel.Core
+(x) CTL-811 Fixed thread racing against IsLockAcquired property
+(x) CTL-813 BehaviorBase - AssociatedObject.Unloaded can be called multiple times
+(x) CTL-823 Enum<TEnum>.TryParse with case insensitive does not work
+(x) CTL-839 Windows not exposing the Closed event (such as MahApps ContentDialog) don't close the view model
+(x) CTL-877 TypeCache.InitializeTypes with force & assembly should only invalidate specified assembly
+(x) CTL-878 Fix for FileLogListener causes UnauthorizedAccessException in web applications 
+(x) CTL-880 Sometimes (very rarely) fails to set view model when switching views (loaded, unloaded, loaded) very fast
+(x) CTL-887 GetString in LanguageService does not correctly resolve resources for non-neutral cultures in metro apps
+(x) CTL-891 Prevent duplicate view model creation in nested user controls when the data context hasn't really changed
+(x) CTL-892 Fixed NullReferenceException when using the GetErrorMessage() or GetWarningMessage() extension 
+    methods for ModelBase
+(x) CTL-893 ThemeHelper should not cache too aggressive, it could result in full refresh of all DataWindows each 
+    time a new DataWindow is openened
+(x) CTL-896 BehaviorBase could get into a negative loaded count prevent the next load event from being noticed
+
+Roadmap:
+========
+See http://www.catelproject.com/support/issue-tracker
+
+Known issues:
+=============
+See http://www.catelproject.com/support/issue-tracker
+
+**********************************************************
+
+==================
+Version 4.4.0
+==================
+
+For an update guide, visit https://catelproject.atlassian.net/wiki/display/CTL/Update+guides
+
+Release date:
+=============
+2015/11/27
+
+Added/fixed (BREAKING CHANGES):
+===============================
+No breaking changes, but made a lot of preparations for the "async big bang" that will happen in Catel 5.0. We are
+currently trying to index all members that might need async members in the future. Most of these members are now
+marked as obsolete and have an async handler which must be used in the future.
+
+Platform support changes:
+=========================
+[none]
+
+Classes / members marked as obsolete:
+=====================================
+Our mission is to make Catel easier to maintain in the future. One way to achieve this is to remove unused
+features and components. We are actively removing features by marking them obsolete. If nobody complains,
+we will remove the features in the next major release.
+
+* CTL-671 Marked Catel.Extensions.CSLA as obsolete to minimize maintenance costs of Catel
+* CTL-672 Marked Catel.Extensions.Wcf.Server as obsolete to minimize maintenance costs of Catel
+* CTL-740 Marked IMessageMediator.SendMessageAsync as obsolete because it's not truly async
+* CTL-755 Marked Catel.Windows.Controls.ScrollViewerProperties as obsolete to minimize maintenance costs of Catel
+* CTL-756 Marked Catel.Windows.Controls.RichToolTip as obsolete to minimize maintenance costs of Catel
+* CTL-784 Marked AttributeHelper as obsolete, use reflection extensions instead
+
+Added/fixed:
+============
+(+) CTL-742 Add support for Prism 6 (NET45 and NET46)
+(+) CTL-751 Add DisplayNameAttribute that uses the ILanguageService by default
+(+) CTL-762 Add SerializeAsCollection attribute to serialize a ModelBase as collection when it implements both 
+    ModelBase and IList (otherwise it will default to serialize as model)
+(+) CTL-766 Support visibility converters in Xamarin.Android
+(+) CTL-776 Introduce Catel.Threading.Timer so it behaves the same on all platforms
+(+) CTL-777 Create extension methods to log headers (e.g. log.DebugHeading1, etc)
+(+) CTL-779 Add Russian resources to Catel.MVVM
+(+) CTL-782 Add case insensitive overloads to all PropertyHelper methods
+(+) CTL-783 Create GetAttribute extension methods for Type and MemberInfo
+(+) CTL-786 Include generated resources.dll in the NuGet packages
+(*) CTL-754 Turn DataAnnotation validation off when setting property value
+(*) CTL-755 Marked Catel.Windows.Controls.ScrollViewerProperties as obsolete to minimize maintenance costs of Catel
+(*) CTL-756 Marked Catel.Windows.Controls.RichToolTip as obsolete to minimize maintenance costs of Catel
+(*) CTL-759 Allow ViewToViewModel to have the model property name missing when there is just 1 model
+(*) CTL-763 Improve performance of serialization engine by caching some method results
+(*) CTL-767 Use ILanguageService in UI elements (like DataWindow, InfoBarMessageControl, etc)
+(*) CTL-778 Default to null instead of string.Empty when reading tags from IoC configuration
+(*) CTL-784 Move AttributeHelper to reflection extensions
+(x) CTL-740 TargetParameterCountException while sending message on RT projects (RT projects now support weak actions)
+(x) CTL-744 Fixed missing DataWindowStyle when only referencing Catel.Extensions.Controls theme (it was no longer
+    including the Catel.MVVM theme)
+(x) CTL-753 Support serialization for ModelBase that also implements IList
+(x) CTL-761 NumericTextBox does not support Key.Decimal entries
+(x) CTL-780 Support untyped generics in IoC when registering them via attributes
+
+Roadmap:
+========
+See http://www.catelproject.com/support/issue-tracker
+
+Known issues:
+=============
+See http://www.catelproject.com/support/issue-tracker
+
+**********************************************************
+
+==================
+Version 4.3.0
+==================
+
+For an update guide, visit https://catelproject.atlassian.net/wiki/display/CTL/Update+guides
+
+Release date:
+=============
+2015/10/05
+
+Added/fixed (BREAKING CHANGES):
+===============================
+No breaking changes, but made a lot of preparations for the "async big bang" that will happen in Catel 5.0. We are
+currently trying to index all members that might need async members in the future. Most of these members are now
+marked as obsolete and have an async handler which must be used in the future.
+
+Platform support changes:
+=========================
+(*) CTL-724 Created separate projects for Universal App Platform projects (UAP 10.0)
+(*) CTL-741 Support .NET 4.6 for Prism 5
 
 Classes marked as obsolete:
 ===========================
@@ -46,7 +389,26 @@ we will remove the features in the next major release.
 
 Added/fixed:
 ============
-xxx
+(+) CTL-718 Add LogMessage event to RollingInMemoryService
+(+) CTL-727 Created ExceptionFactory and convert all throw new exception calls
+(+) CTL-732 Add DeviceHelper so it's easy to determine on what kind of device the code is being executed
+(+) CTL-730 Support array deserialization in all serializers (Xml, Binary, Json)
+(*) CTL-713 Improved designer support by automatically initializing all classes that derive from DesignTimeInitializer. 
+    This way it's possible to have customized registrations at design time (for example switching languages at design 
+    time, even when the code is using the ILanguageService and custom resx files)
+(*) CTL-719 Don't store extra undo action for properties when validation errors are cleared in memento
+(*) CTL-723 Add LogExtensions.ErrorAndCreateException to replace ErrorAndThrowException which returns an exception. The
+    code must be changed to 'throw Log.ErrorAndCreateException<MyException>("my message");'
+(*) CTL-724 Created separate projects for Universal App Platform projects (UAP 10.0)
+(*) CTL-725 Update NuGet reference to 2.8.6
+(*) CTL-726 Fallback to non-weak events when weak event subscription fails (required for UAP)
+(*) CTL-729 Support .NET native in the WeakEventListener
+(*) CTL-735 Support async canceling on closing event of DataWindow
+(*) CTL-741 Support .NET 4.6 for Prism 5
+(x) CTL-714 Serialize Model with only one property as XML attribute does not work
+(x) CTL-720 NullReferenceException in ChangeNotificationWrapper
+(x) CTL-721 AppDomainExtensions.PreloadAssemblies() throws exception on loading native dll
+(x) CTL-731 ViewModelBase.CancelingAsync gets called twice on IViewModelExtensions.CancelAndCloseViewModelAsync
 
 Roadmap:
 ========

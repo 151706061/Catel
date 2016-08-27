@@ -66,10 +66,7 @@ namespace Catel.Reflection
             var typedInstance = instance as TTargetType;
             if ((typedInstance == null) && (instance != null))
             {
-                string error = string.Format("Expected an instance of '{0}', but retrieved an instance of '{1}', cannot return the typed instance", typeof(TTargetType).Name, instance.GetType().Name);
-
-                Log.Error(error);
-                throw new NotSupportedException(error);
+                throw Log.ErrorAndCreateException<NotSupportedException>("Expected an instance of '{0}', but retrieved an instance of '{1}', cannot return the typed instance", typeof (TTargetType).Name, instance.GetType().Name);
             }
 
             return typedInstance;
@@ -84,8 +81,10 @@ namespace Catel.Reflection
         ///   <c>true</c> if the subclass is of a raw generic type; otherwise, <c>false</c>.
         /// </returns>
         /// <remarks>
-        ///   This implementation is based on this forum thread:
-        ///   http://stackoverflow.com/questions/457676/c-reflection-check-if-a-class-is-derived-from-a-generic-class
+        /// This implementation is based on this forum thread:
+        /// http://stackoverflow.com/questions/457676/c-reflection-check-if-a-class-is-derived-from-a-generic-class
+        /// <para />
+        /// Original license: CC BY-SA 2.5, compatible with the MIT license.
         /// </remarks>
         /// <exception cref = "ArgumentNullException">The <paramref name = "generic" /> is <c>null</c>.</exception>
         /// <exception cref = "ArgumentNullException">The <paramref name = "toCheck" /> is <c>null</c>.</exception>
@@ -167,7 +166,7 @@ namespace Catel.Reflection
 
             var assemblyNameWithoutOverhead = GetAssemblyName(fullTypeName);
             var assemblyName = GetAssemblyNameWithoutOverhead(assemblyNameWithoutOverhead);
-            string typeName = GetTypeName(fullTypeName);
+            var typeName = GetTypeName(fullTypeName);
 
             return FormatType(assemblyName, typeName);
         }
@@ -215,7 +214,7 @@ namespace Catel.Reflection
 
             fullTypeName = GetTypeName(fullTypeName);
 
-            int splitterPos = fullTypeName.LastIndexOf(".", StringComparison.Ordinal);
+            var splitterPos = fullTypeName.LastIndexOf(".", StringComparison.Ordinal);
 
             var typeName = (splitterPos != -1) ? fullTypeName.Substring(0, splitterPos).Trim() : fullTypeName;
             return typeName;
@@ -497,11 +496,11 @@ namespace Catel.Reflection
         /// <returns>The casted value.</returns>
         public static TOutput Cast<TOutput>(object value)
         {
-            TOutput output = default(TOutput);
+            var output = default(TOutput);
 
             if (!TryCast(value, out output))
             {
-                var tI = value.GetType().GetSafeFullName();
+                var tI = value.GetType().GetSafeFullName(false);
                 string tO = typeof(TOutput).FullName;
                 string vl = string.Concat(value);
                 string msg = "Failed to cast from '{0}' to '{1}'";
@@ -511,8 +510,7 @@ namespace Catel.Reflection
                     msg = string.Concat(msg, " for value '{2}'");
                 }
 
-                msg = string.Format(msg, tI, tO, vl);
-                throw new InvalidCastException(msg);
+                throw Log.ErrorAndCreateException<InvalidCastException>(msg, tI, tO, vl);
             }
 
             return output;

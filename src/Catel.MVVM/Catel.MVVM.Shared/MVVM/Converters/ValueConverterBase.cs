@@ -10,6 +10,7 @@ namespace Catel.MVVM.Converters
     using System.Globalization;
     using Logging;
     using Reflection;
+
 #if XAMARIN
     
 #elif NETFX_CORE
@@ -17,7 +18,7 @@ namespace Catel.MVVM.Converters
     using System.ComponentModel;
 #endif
 
-#if NET || SL5
+#if NET
     using System.Windows.Markup;
 #endif
 
@@ -41,7 +42,7 @@ namespace Catel.MVVM.Converters
     /// </summary>
     /// <typeparam name="TConvert">The type of the convert input.</typeparam>
     /// <typeparam name="TConvertBack">The type of the convert back input.</typeparam>
-#if NET || SL5
+#if NET
     public abstract class ValueConverterBase<TConvert, TConvertBack> : MarkupExtension, IValueConverter
 #else
     public abstract class ValueConverterBase<TConvert, TConvertBack> : IValueConverter
@@ -96,7 +97,7 @@ namespace Catel.MVVM.Converters
         /// <returns>The value to be passed to the target dependency property.</returns>
         public object Convert(object value, Type targetType, object parameter, string language)
         {
-            return Convert(value, targetType, parameter, new CultureInfo(language));
+            return Convert(value, targetType, parameter, GetCulture(language));
         }
 
         /// <summary>
@@ -109,7 +110,23 @@ namespace Catel.MVVM.Converters
         /// <returns>The value to be passed to the source object.</returns>
         public object ConvertBack(object value, Type targetType, object parameter, string language)
         {
-            return ConvertBack(value, targetType, parameter, new CultureInfo(language));
+            return ConvertBack(value, targetType, parameter, GetCulture(language));
+        }
+
+        /// <summary>
+        /// Gets the current culture for the specified language. If the language is <c>null</c>, this method returns the <c>CurrentCulture</c>.
+        /// </summary>
+        /// <param name="language">The language.</param>
+        /// <returns>The culture info.</returns>
+        protected static CultureInfo GetCulture(string language)
+        {
+            var culture = CultureInfo.CurrentCulture;
+            if (!string.IsNullOrWhiteSpace(language))
+            {
+                culture = new CultureInfo(language);
+            }
+
+            return culture;
         }
 #endif
 
@@ -241,7 +258,7 @@ namespace Catel.MVVM.Converters
             return ConverterHelper.UnsetValue;
         }
 
-#if NET || SL5
+#if NET
         /// <summary>
         /// When implemented in a derived class, returns an object that is set as the value of the target property for this markup extension.
         /// </summary>

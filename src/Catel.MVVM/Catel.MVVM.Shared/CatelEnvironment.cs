@@ -53,7 +53,12 @@ namespace Catel
             {
                 if (!_isInDesignMode.HasValue)
                 {
-                    _isInDesignMode = GetIsInDesignMode();
+                    _isInDesignMode = GetIsInDesignMode(true);
+                }
+
+                if (_isInDesignMode.Value)
+                {
+                    DesignTimeHelper.InitializeDesignTime();
                 }
 
                 return _isInDesignMode.Value;
@@ -96,10 +101,9 @@ namespace Catel
             ViewModelServiceHelper.RegisterDefaultViewModelServices(ServiceLocator.Default);
         }
 
-#if !WINDOWS_PHONE && !PCL && !XAMARIN
+#if !PCL && !XAMARIN
         /// <summary>
-        /// Gets the main window of the application. This is a convenience call to easily allow the retrieval of the main window
-        /// for each target framework (WPF, Silverlight, Windows Phone, etc).
+        /// Gets the main window of the application.
         /// </summary>
         public static Window MainWindow
         {
@@ -131,10 +135,11 @@ namespace Catel
         /// <summary>
         /// Gets whether the software is currently in design mode.
         /// <para />
-        /// Note that unless the <see cref="IsInDesignMode"/>, the value is not cached but always determined at runtime.
+        /// Note that unless the <see cref="IsInDesignMode" />, the value is not cached but always determined at runtime.
         /// </summary>
+        /// <param name="initializeDesignTime">if set to <c>true</c>, automatically call <see cref="DesignTimeHelper.InitializeDesignTime"/> if in design mode.</param>
         /// <returns><c>true</c> if the software is in design mode, <c>false</c> otherwise.</returns>
-        public static bool GetIsInDesignMode()
+        public static bool GetIsInDesignMode(bool initializeDesignTime)
         {
             bool? isInDesignMode = null;
 
@@ -161,6 +166,11 @@ namespace Catel
 #else
             isInDesignMode = DesignerProperties.IsInDesignTool;
 #endif
+
+            if (initializeDesignTime && isInDesignMode.Value)
+            {
+                DesignTimeHelper.InitializeDesignTime();
+            }
 
             return isInDesignMode.Value;
         }

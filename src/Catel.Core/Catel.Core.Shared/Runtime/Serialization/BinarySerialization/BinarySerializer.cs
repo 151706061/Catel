@@ -56,7 +56,10 @@ namespace Catel.Runtime.Serialization.Binary
         public BinarySerializer(ISerializationManager serializationManager, ITypeFactory typeFactory, IObjectAdapter objectAdapter)
             : base(serializationManager, typeFactory, objectAdapter)
         {
-            DeserializationBinder = new RedirectDeserializationBinder();
+            if (DeserializationBinder == null)
+            {
+                DeserializationBinder = new RedirectDeserializationBinder();
+            }
         }
         #endregion
 
@@ -153,13 +156,29 @@ namespace Catel.Runtime.Serialization.Binary
             var serializationContext = context.Context;
             var memberValues = serializationContext.MemberValues;
 
-            var finalMembervalue = (from x in memberValues
+            var finalMemberValue = (from x in memberValues
                                     where string.Equals(x.Name, memberValue.Name, StringComparison.Ordinal)
                                     select x).FirstOrDefault();
 
-            if (finalMembervalue != null)
+            if (finalMemberValue != null)
             {
-                return SerializationObject.SucceededToDeserialize(context.ModelType, memberValue.MemberGroup, memberValue.Name, finalMembervalue.Value);
+                if (finalMemberValue.Value is string && ShouldSerializeUsingParse(memberValue, false))
+                {
+                    var tempValue = memberValue.Value;
+                    memberValue.Value = finalMemberValue.Value;
+
+                    var parsedValue = DeserializeUsingObjectParse(context, memberValue);
+                    if (parsedValue != null)
+                    {
+                        finalMemberValue.Value = parsedValue;
+                    }
+                    else
+                    {
+                        memberValue.Value = tempValue;
+                    }
+                }
+
+                return SerializationObject.SucceededToDeserialize(context.ModelType, memberValue.MemberGroup, memberValue.Name, finalMemberValue.Value);
             }
 
             return SerializationObject.FailedToDeserialize(context.ModelType, memberValue.MemberGroup, memberValue.Name);
@@ -256,7 +275,8 @@ namespace Catel.Runtime.Serialization.Binary
 
             try
             {
-                if (ShouldSerializeAsCollection(context.ModelType, context.Model))
+                var shouldSerializeAsCollection = ShouldSerializeAsCollection(context.ModelType);
+                if (shouldSerializeAsCollection)
                 {
                     var collection = serializationInfo.GetValue(CollectionName, context.ModelType);
                     var memberValue = new MemberValue(SerializationMemberGroup.Collection, context.ModelType, context.ModelType, CollectionName, CollectionName, collection);
@@ -321,6 +341,17 @@ namespace Catel.Runtime.Serialization.Binary
         }
 
         /// <summary>
+        /// Shoulds the serialize model as collection.
+        /// </summary>
+        /// <param name="memberType">Type of the member.</param>
+        /// <returns><c>true</c> if XXXX, <c>false</c> otherwise.</returns>
+        protected override bool ShouldSerializeModelAsCollection(Type memberType)
+        {
+            // The binary serializer never serializes models as collections
+            return false;
+        }
+
+        /// <summary>
         /// Configures the binary formatter.
         /// </summary>
         /// <param name="contextMode">The context mode.</param>
@@ -357,7 +388,8 @@ namespace Catel.Runtime.Serialization.Binary
                 if (memberValue.Value != null && memberValue.Value.GetType().IsClassType())
                 {
                     var referenceInfo = referenceManager.GetInfo(memberValue.Value);
-                    if (referenceInfo.IsFirstUsage || memberValue.MemberGroup == SerializationMemberGroup.Collection)
+                    var shouldSerializeAsCollection = memberValue.MemberGroup == SerializationMemberGroup.Collection;
+                    if (referenceInfo.IsFirstUsage || shouldSerializeAsCollection)
                     {
                         propertyValue.GraphId = referenceInfo.Id;
                     }

@@ -24,7 +24,12 @@ namespace Catel.IO
         /// <summary>
         /// The user.
         /// </summary>
-        User,
+        UserLocal,
+
+        /// <summary>
+        /// The user.
+        /// </summary>
+        UserRoaming,
 
         /// <summary>
         /// The machine.
@@ -49,7 +54,7 @@ namespace Catel.IO
         /// <returns>Directory for the application data.</returns>
         public static string GetApplicationDataDirectory()
         {
-            return GetApplicationDataDirectory(ApplicationDataTarget.User);
+            return GetApplicationDataDirectory(ApplicationDataTarget.UserRoaming);
         }
 
         /// <summary>
@@ -61,7 +66,7 @@ namespace Catel.IO
         /// <returns>Directory for the application data.</returns>
         public static string GetApplicationDataDirectory(string productName)
         {
-            return GetApplicationDataDirectory(ApplicationDataTarget.User, productName);
+            return GetApplicationDataDirectory(ApplicationDataTarget.UserRoaming, productName);
         }
 
         /// <summary>
@@ -75,7 +80,7 @@ namespace Catel.IO
         /// <returns>Directory for the application data.</returns>
         public static string GetApplicationDataDirectory(string companyName, string productName)
         {
-            return GetApplicationDataDirectory(ApplicationDataTarget.User, companyName, productName);
+            return GetApplicationDataDirectory(ApplicationDataTarget.UserRoaming, companyName, productName);
         }
 
         /// <summary>
@@ -161,7 +166,11 @@ namespace Catel.IO
 
             switch (applicationDataTarget)
             {
-                case ApplicationDataTarget.User:
+                case ApplicationDataTarget.UserLocal:
+                    rootDirectory = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                    break;
+
+                case ApplicationDataTarget.UserRoaming:
                     rootDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
                     break;
 

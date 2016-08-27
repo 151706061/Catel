@@ -10,7 +10,7 @@ namespace Catel.MVVM
     using System.Threading;
     using System.Threading.Tasks;
 
-#if NET40 || SILVERLIGHT
+#if NET40
     using Microsoft;
 #endif
 
@@ -255,11 +255,11 @@ namespace Catel.MVVM
 
             if (executionTask.IsCanceled || executionTask.IsFaulted)
             {
-                Canceled.SafeInvoke(this, new CommandEventArgs(parameter));
+                Canceled.SafeInvoke(this, () => new CommandEventArgs(parameter));
             }
             else
             {
-                RaiseExecuted(parameter);
+                await RaiseExecutedAsync(parameter);
             }
 
             RaiseCanExecuteChanged();
@@ -294,7 +294,7 @@ namespace Catel.MVVM
                 _reportProgress(progress);
             }
 
-            var action = new Action(() => ProgressChanged.SafeInvoke(this, new CommandProgressChangedEventArgs<TProgress>(progress)));
+            var action = new Action(() => ProgressChanged.SafeInvoke(this, () => new CommandProgressChangedEventArgs<TProgress>(progress)));
             AutoDispatchIfRequired(action);
         }
 
@@ -317,7 +317,40 @@ namespace Catel.MVVM
     /// <typeparamref name="TExecuteParameter" /> as generic type.
     /// </summary>
     /// <typeparam name="TExecuteParameter">The type of the execute parameter.</typeparam>
-    public class TaskCommand<TExecuteParameter> : TaskCommand<TExecuteParameter, TExecuteParameter, ITaskProgressReport>
+    /// <typeparam name="TCanExecuteParameter">The type of the can execute parameter.</typeparam>
+    public class TaskCommand<TExecuteParameter, TCanExecuteParameter> : TaskCommand<TExecuteParameter, TCanExecuteParameter, ITaskProgressReport>
+    {
+        #region Constructors
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TaskCommand{TExecuteParameter}" /> class.
+        /// </summary>
+        /// <param name="execute">The action to execute.</param>
+        /// <param name="canExecute">The function to call to determine whether the command can be executed.</param>
+        /// <param name="tag">The tag of the command.</param>
+        public TaskCommand(Func<TExecuteParameter, Task> execute, Func<TCanExecuteParameter, bool> canExecute = null, object tag = null)
+            : base(execute, canExecute, tag)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TaskCommand{TExecuteParameter}" /> class.
+        /// </summary>
+        /// <param name="execute">The action to execute.</param>
+        /// <param name="canExecute">The function to call to determine whether the command can be executed.</param>
+        /// <param name="tag">The tag of the command.</param>
+        public TaskCommand(Func<TExecuteParameter, CancellationToken, Task> execute, Func<TCanExecuteParameter, bool> canExecute = null, object tag = null)
+            : base(execute, canExecute, tag)
+        {
+        }
+        #endregion
+    }
+
+    /// <summary>
+    /// Implements the <see cref="TaskCommand{TExecuteParameter,TCanExecuteParameter,TProgress}" /> class with only the
+    /// <typeparamref name="TExecuteParameter" /> as generic type.
+    /// </summary>
+    /// <typeparam name="TExecuteParameter">The type of the execute parameter.</typeparam>
+    public class TaskCommand<TExecuteParameter> : TaskCommand<TExecuteParameter, TExecuteParameter>
     {
         #region Constructors
         /// <summary>

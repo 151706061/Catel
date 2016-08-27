@@ -4,7 +4,7 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-#if !XAMARIN && !NET40 && !PCL && !SILVERLIGHT
+#if !XAMARIN && !NET40 && !PCL
 
 namespace Catel.Logging
 {
@@ -29,7 +29,7 @@ namespace Catel.Logging
         /// <param name="time">The time.</param>
         protected override void Write(ILog log, string message, LogEvent logEvent, object extraData, LogData logData, System.DateTime time)
         {
-            base.Write(log, message, logEvent, extraData, time);
+            base.Write(log, message, logEvent, extraData, logData, time);
 
             switch (logEvent)
             {
@@ -48,9 +48,6 @@ namespace Catel.Logging
                 case LogEvent.Error:
                     _eventSource.Error(message);
                     break;
-
-                default:
-                    throw new ArgumentOutOfRangeException("logEvent");
             }
         }
     }

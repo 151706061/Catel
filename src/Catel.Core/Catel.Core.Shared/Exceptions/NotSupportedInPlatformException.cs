@@ -22,10 +22,27 @@ namespace Catel
         /// <summary>
         /// Initializes a new instance of the <see cref="NotSupportedInPlatformException"/> class.
         /// </summary>
+        public NotSupportedInPlatformException()
+            : this(string.Empty)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NotSupportedInPlatformException"/> class.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        public NotSupportedInPlatformException(string message)
+            : this(message, new object[] { })
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NotSupportedInPlatformException"/> class.
+        /// </summary>
         /// <param name="featureFormat">The feature format.</param>
         /// <param name="args">The formatting arguments.</param>
         public NotSupportedInPlatformException(string featureFormat = "", params object[] args)
-            : base(ResourceHelper.GetString("NotSupportedInPlatform"))
+            : base("Feature is currently not yet supported for this platform")
         {
             Reason = string.Format(featureFormat, args);
             Platform = Platforms.CurrentPlatform;

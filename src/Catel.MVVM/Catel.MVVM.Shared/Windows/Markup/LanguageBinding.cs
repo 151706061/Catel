@@ -4,11 +4,12 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-#if NET || SILVERLIGHT
+#if NET
 
 namespace Catel.Windows.Markup
 {
     using System;
+    using System.Globalization;
     using System.Windows;
     using System.Windows.Threading;
     using Catel.IoC;
@@ -55,6 +56,18 @@ namespace Catel.Windows.Markup
         [ConstructorArgument("resourceName")]
 #endif
         public string ResourceName { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to hide design time messages or not.
+        /// </summary>
+        /// <value><c>true</c> if design time messages should be hidden; otherwise, <c>false</c>.</value>
+        public bool HideDesignTimeMessages { get; set; }
+
+        /// <summary>
+        /// Gets or sets the culture. If set to <c>null</c>, it will be determined automatically.
+        /// </summary>
+        /// <value>The culture.</value>
+        public CultureInfo Culture { get; set; }
         #endregion
 
         private void OnLanguageUpdated(object sender, EventArgs e)
@@ -65,20 +78,50 @@ namespace Catel.Windows.Markup
         /// <summary>
         /// When implemented in a derived class, returns an object that is provided as the value of the target property for this markup extension.
         /// </summary>
+        /// <param name="serviceProvider">The service provider.</param>
         /// <returns>The object value to set on the property where the extension is applied.</returns>
-        protected override object ProvideDynamicValue()
+        protected override object ProvideDynamicValue(IServiceProvider serviceProvider)
         {
             if (_languageService == null)
             {
+                if (ShowDesignTimeMessages())
+                {
+                    return "[Language service not available]";
+                }
+
                 return null;
             }
 
             if (string.IsNullOrWhiteSpace(ResourceName))
             {
+                if (ShowDesignTimeMessages())
+                {
+                    return "[ResourceName is null or white space]";
+                }
+
                 return null;
             }
 
-            var resource = _languageService.GetString(ResourceName);
+            var resource = string.Empty;
+
+            var culture = Culture;
+            if (culture != null)
+            {
+                resource = _languageService.GetString(ResourceName, culture);
+            }
+            else
+            {
+                resource = _languageService.GetString(ResourceName);
+            }
+
+            if (string.IsNullOrWhiteSpace(resource))
+            {
+                if (ShowDesignTimeMessages())
+                {
+                    return "[empty]";
+                }
+            }
+
             return resource;
         }
 
@@ -100,6 +143,11 @@ namespace Catel.Windows.Markup
         protected override void OnTargetObjectUnloaded()
         {
             _languageService.LanguageUpdated -= OnLanguageUpdated;
+        }
+
+        private bool ShowDesignTimeMessages()
+        {
+            return !HideDesignTimeMessages && CatelEnvironment.IsInDesignMode;
         }
     }
 }

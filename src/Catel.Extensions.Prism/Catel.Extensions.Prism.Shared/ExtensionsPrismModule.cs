@@ -10,7 +10,12 @@ namespace Catel
     using IoC;
     using Services;
 
+#if PRISM6
+    using Prism.Regions;
+#else
     using Microsoft.Practices.Prism.Regions;
+#endif
+
     using Tasks;
 
     /// <summary>
@@ -24,7 +29,7 @@ namespace Catel
         /// <param name="serviceLocator">The service locator.</param>
         public void Initialize(IServiceLocator serviceLocator)
         {
-            Argument.IsNotNull(() => serviceLocator);
+            Argument.IsNotNull("serviceLocator", serviceLocator);
 
             serviceLocator.RegisterTypeIfNotYetRegistered<IBootstrapperTaskFactory, BootstrapperTaskFactory>();
 

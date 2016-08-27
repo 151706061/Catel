@@ -4,8 +4,6 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-
-
 #if !XAMARIN
 
 namespace Catel.Windows
@@ -33,7 +31,7 @@ namespace Catel.Windows
         /// <param name="element">The UI element.</param>
         public static void FixBlurriness(this FrameworkElement element)
         {
-            Argument.IsNotNull(() => element);
+            Argument.IsNotNull("element", element);
 
 #if NET
             element.SnapsToDevicePixels = true;
@@ -51,7 +49,7 @@ namespace Catel.Windows
         {
             Argument.IsNotNull("element", element);
 
-#if NETFX_CORE || SILVERLIGHT
+#if NETFX_CORE
             return element.Visibility == Visibility.Visible;
 #else
             return element.IsVisible;
@@ -95,7 +93,7 @@ namespace Catel.Windows
                 return false;
             }
 
-#if NETFX_CORE || SILVERLIGHT
+#if NETFX_CORE
             var transform = element.TransformToVisual(container);
 #else
             var transform = element.TransformToAncestor(container);
@@ -104,7 +102,7 @@ namespace Catel.Windows
             var bounds = transform.TransformBounds(new Rect(0.0, 0.0, element.ActualWidth, element.ActualHeight));
             var rect = new Rect(0.0, 0.0, container.ActualWidth, container.ActualHeight);
 
-#if NETFX_CORE || SILVERLIGHT
+#if NETFX_CORE
             var topLeft = new Point(bounds.Left, bounds.Top);
             var bottomRight = new Point(bounds.Right, bounds.Bottom);
 #else

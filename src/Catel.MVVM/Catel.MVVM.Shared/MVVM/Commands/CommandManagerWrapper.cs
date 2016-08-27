@@ -4,15 +4,15 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-#if !XAMARIN && !WINDOWS_PHONE
+#if !XAMARIN
 
 namespace Catel.MVVM
 {
     using Catel.IoC;
+    using Logging;
 
-#if !WINDOWS_PHONE && !XAMARIN
+#if !XAMARIN
     using InputGesture = Catel.Windows.Input.InputGesture;
-
 #if NETFX_CORE
     using global::Windows.UI.Xaml;
     using KeyEventArgs = global::Windows.UI.Xaml.Input.KeyRoutedEventArgs;
@@ -29,6 +29,8 @@ namespace Catel.MVVM
     /// </summary>
     public class CommandManagerWrapper
     {
+        private static readonly ILog Log = LogManager.GetCurrentClassLogger();
+
         private readonly ICommandManager _commandManager;
 
         private bool _subscribed;
@@ -40,14 +42,25 @@ namespace Catel.MVVM
         /// <param name="commandManager">The command manager.</param>
         public CommandManagerWrapper(FrameworkElement view, ICommandManager commandManager = null)
         {
-            Argument.IsNotNull(() => view);
+            Argument.IsNotNull("view", view);
 
             _commandManager = commandManager ?? ServiceLocator.Default.ResolveType<ICommandManager>();
 
             View = view;
 
-            WeakEventListener.SubscribeToWeakGenericEvent<RoutedEventArgs>(this, view, "Loaded", OnViewLoaded);
-            WeakEventListener.SubscribeToWeakGenericEvent<RoutedEventArgs>(this, view, "Unloaded", OnViewUnloaded);
+            if (this.SubscribeToWeakGenericEvent<RoutedEventArgs>(view, "Loaded", OnViewLoaded, false) == null)
+            {
+                Log.Debug("Failed to use weak events to subscribe to 'view.Loaded', going to subscribe without weak events");
+
+                view.Loaded += OnViewLoaded;
+            }
+
+            if (this.SubscribeToWeakGenericEvent<RoutedEventArgs>(view, "Unloaded", OnViewUnloaded, false) == null)
+            {
+                Log.Debug("Failed to use weak events to subscribe to 'view.Unloaded', going to subscribe without weak events");
+
+                view.Unloaded += OnViewUnloaded;
+            }
 
             Subscribe();
         }
@@ -102,6 +115,11 @@ namespace Catel.MVVM
 
         private void OnKeyDown(object sender, KeyEventArgs e)
         {
+            if (_commandManager.IsKeyboardEventsSuspended)
+            {
+                return;
+            }
+
             if (e.Handled)
             {
                 // Don't get in the way of already handled KeyDown events

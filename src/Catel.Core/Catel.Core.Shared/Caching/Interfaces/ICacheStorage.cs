@@ -18,7 +18,23 @@ namespace Catel.Caching
     /// <typeparam name="TValue">The value type.</typeparam>
     public interface ICacheStorage<TKey, TValue>
     {
+        /// <summary>
+        /// Occurs when the item is expiring.
+        /// </summary>
+        event EventHandler<ExpiringEventArgs<TKey, TValue>> Expiring;
+
+        /// <summary>
+        /// Occurs when the item has expired.
+        /// </summary>
+        event EventHandler<ExpiredEventArgs<TKey, TValue>> Expired;
+
         #region Properties
+        /// <summary>
+        /// Gets or sets whether values should be disposed on removal.
+        /// </summary>
+        /// <value><c>true</c> if values should be disposed on removal; otherwise, <c>false</c>.</value>
+        bool DisposeValuesOnRemoval { get; set; }
+
         /// <summary>
         /// Gets the value associated with the specified key.
         /// </summary>
@@ -119,8 +135,7 @@ namespace Catel.Caching
         /// Clears all the items currently in the cache.
         /// </summary>
         void Clear();
-        #endregion
-
+        
         /// <summary>
         /// Adds a value to the cache associated with to a key asynchronously.
         /// <para />
@@ -133,7 +148,7 @@ namespace Catel.Caching
         /// <returns>The instance initialized by the <paramref name="code" />.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="key" /> is <c>null</c>.</exception>
         /// <exception cref="ArgumentNullException">If <paramref name="code" /> is <c>null</c>.</exception>
-        Task<TValue> GetFromCacheOrFetchAsync(TKey key, Func<TValue> code, ExpirationPolicy expirationPolicy, bool @override = false);
+        Task<TValue> GetFromCacheOrFetchAsync(TKey key, Func<Task<TValue>> code, ExpirationPolicy expirationPolicy, bool @override = false);
 
         /// <summary>
         /// Adds a value to the cache associated with to a key asynchronously.
@@ -147,6 +162,7 @@ namespace Catel.Caching
         /// <returns>The instance initialized by the <paramref name="code" />.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="key" /> is <c>null</c>.</exception>
         /// <exception cref="ArgumentNullException">If <paramref name="code" /> is <c>null</c>.</exception>
-        Task<TValue> GetFromCacheOrFetchAsync(TKey key, Func<TValue> code, bool @override = false, TimeSpan expiration = default(TimeSpan));
+        Task<TValue> GetFromCacheOrFetchAsync(TKey key, Func<Task<TValue>> code, bool @override = false, TimeSpan expiration = default(TimeSpan));
+        #endregion
     }
 }

@@ -4,18 +4,15 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
+#if EF5
+
 namespace Catel.Data
 {
     using System;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-
-#if EF5
     using System.Data.Objects;
-#else
-    using System.Data.Entity.Core.Objects;
-#endif
 
     /// <summary>
     /// Extensions for the <see cref="IQueryable"/> interface.
@@ -33,8 +30,8 @@ namespace Catel.Data
         /// <exception cref="ArgumentNullException">The <paramref name="expression"/> is <c>null</c>.</exception>
         public static IQueryable<T> Include<T>(this IQueryable<T> query, Expression<Func<T, object>> expression)
         {
-            Argument.IsNotNull(() => query);
-            Argument.IsNotNull(() => expression);
+            Argument.IsNotNull("query", query);
+            Argument.IsNotNull("expression", expression);
 
             var objectQuery = query as ObjectQuery<T>;
             if (objectQuery != null)
@@ -68,3 +65,5 @@ namespace Catel.Data
         }
     }
 }
+
+#endif

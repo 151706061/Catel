@@ -48,7 +48,7 @@ namespace Catel.MVVM.Providers
         private IViewModelContainer _parentViewModelContainer;
         private IViewModel _parentViewModel;
 
-#if NET ||SL5
+#if NET
         private InfoBarMessageControl _infoBarMessageControl;
 #endif
         #endregion
@@ -68,13 +68,14 @@ namespace Catel.MVVM.Providers
             ApiCop.RegisterRule(new UnusedFeatureApiCopRule("UserControlLogic.SupportParentViewModelContainers", "No parent IViewModelContainer is found in the visual tree. Only use this feature when there are parent IViewModelContainer instances. Consider setting the SupportParentViewModelContainers to false.", ApiCopRuleLevel.Error,
                 "https://catelproject.atlassian.net/wiki/display/CTL/Performance+considerations"));
 
+            DefaultSupportParentViewModelContainersValue = true;
             DefaultUnloadBehaviorValue = UnloadBehavior.SaveAndCloseViewModel;
 
 #if !XAMARIN
             DefaultTransferStylesAndTransitionsToViewModelGridValue = false;
 #endif
 
-#if NET || SL5
+#if NET
             DefaultCreateWarningAndErrorValidatorForViewModelValue = true;
 #endif
         }
@@ -94,15 +95,15 @@ namespace Catel.MVVM.Providers
                 return;
             }
 
-            SupportParentViewModelContainers = true;
-            CloseViewModelOnUnloaded = true;
+            SupportParentViewModelContainers = DefaultSupportParentViewModelContainersValue;
             UnloadBehavior = DefaultUnloadBehaviorValue;
+            CloseViewModelOnUnloaded = true;
 
 #if !XAMARIN
             TransferStylesAndTransitionsToViewModelGrid = DefaultTransferStylesAndTransitionsToViewModelGridValue;
 #endif
 
-#if NET || SL5
+#if NET
             SkipSearchingForInfoBarMessageControl = DefaultSkipSearchingForInfoBarMessageControlValue;
             CreateWarningAndErrorValidatorForViewModel = DefaultCreateWarningAndErrorValidatorForViewModelValue;
 #endif
@@ -114,9 +115,6 @@ namespace Catel.MVVM.Providers
             // Hence target control content wrapper grid will be recreated each time content changes.
             targetView.SubscribeToPropertyChanged("Content", OnTargetControlContentChanged);
 #endif
-
-            this.SubscribeToWeakGenericEvent<ViewLoadEventArgs>(ViewLoadManager, "ViewLoading", OnViewLoadedManagerLoadingForParentView);
-            this.SubscribeToWeakGenericEvent<ViewLoadEventArgs>(ViewLoadManager, "ViewUnloading", OnViewLoadedManagerUnloadingForParentView);
         }
         #endregion
 
@@ -150,6 +148,14 @@ namespace Catel.MVVM.Providers
         /// <c>true</c> if parent view model containers are supported; otherwise, <c>false</c>.
         /// </value>
         public bool SupportParentViewModelContainers { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default value for the <see cref="SupportParentViewModelContainers"/> property.
+        /// <para />
+        /// The default value is <c>true</c>.
+        /// </summary>
+        /// <value>The unload behavior.</value>
+        public static bool DefaultSupportParentViewModelContainersValue { get; set; }
 
         /// <summary>
         /// Gets or sets the unload behavior when the data context of the target control changes.
@@ -186,7 +192,7 @@ namespace Catel.MVVM.Providers
         public static bool DefaultTransferStylesAndTransitionsToViewModelGridValue { get; set; }
 #endif
 
-#if NET || SL5
+#if NET
         /// <summary>
         /// Gets or sets a value indicating whether to skip the search for an info bar message control. If not skipped,
         /// the user control will search for a the first <see cref="InfoBarMessageControl"/> that can be found. 
@@ -306,7 +312,7 @@ namespace Catel.MVVM.Providers
             {
                 var wrapOptions = WrapOptions.None;
 
-#if NET || SL5
+#if NET
                 if (CreateWarningAndErrorValidatorForViewModel)
                 {
                     wrapOptions |= WrapOptions.CreateWarningAndErrorValidatorForViewModel;
@@ -324,7 +330,7 @@ namespace Catel.MVVM.Providers
 
                 // NOTE: Beginning invoke (running async) because setting of TargetControl Content property causes memory faults
                 // when this method called by TargetControlContentChanged handler. No need to await though.
-#if NETFX_CORE
+#if NETFX_CORE && !UAP
                 var dispatcher = ((FrameworkElement)TargetView).Dispatcher;
 #pragma warning disable 4014
                 dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => { action(); });
@@ -350,8 +356,10 @@ namespace Catel.MVVM.Providers
         /// </summary>
         /// <param name="sender">The sender.</param>
         /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        public override async void OnTargetViewLoaded(object sender, EventArgs e)
+        public override async Task OnTargetViewLoadedAsync(object sender, EventArgs e)
         {
+            await CompleteViewModelClosingAsync();
+
             // Do not call base because it will create a VM. We will create the VM ourselves
             //base.OnTargetControlLoaded(sender, e);
 
@@ -360,7 +368,7 @@ namespace Catel.MVVM.Providers
             // even if the Content property was changed while InitializeComponents() running there is no triggering of a binding update.
             CreateViewModelWrapper();
 
-#if NET || SL5
+#if NET
             if (!SkipSearchingForInfoBarMessageControl)
             {
                 Log.Debug("Searching for an instance of the InfoBarMessageControl");
@@ -412,9 +420,9 @@ namespace Catel.MVVM.Providers
         /// </summary>
         /// <param name="sender">The sender.</param>
         /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        public override async void OnTargetViewUnloaded(object sender, EventArgs e)
+        public override async Task OnTargetViewUnloadedAsync(object sender, EventArgs e)
         {
-            base.OnTargetViewUnloaded(sender, e);
+            await base.OnTargetViewUnloadedAsync(sender, e);
 
             if (ViewModel != null)
             {
@@ -462,7 +470,7 @@ namespace Catel.MVVM.Providers
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         public override async void OnTargetViewDataContextChanged(object sender, Catel.MVVM.Views.DataContextChangedEventArgs e)
         {
-            if (e.AreEqual)
+            if (IsCurrentDataContext(e))
             {
                 return;
             }
@@ -497,12 +505,14 @@ namespace Catel.MVVM.Providers
         }
 
         /// <summary>
-        /// Public event to get information about the parent view.
+        /// Called when the view manager is loading.
         /// </summary>
         /// <param name="sender">The sender.</param>
-        /// <param name="e">The event args.</param>
-        public void OnViewLoadedManagerLoadingForParentView(object sender, ViewLoadEventArgs e)
+        /// <param name="e">The <see cref="ViewLoadEventArgs"/> instance containing the event data.</param>
+        protected override void OnViewLoadedManagerLoading(object sender, ViewLoadEventArgs e)
         {
+            base.OnViewLoadedManagerLoading(sender, e);
+
             if (ReferenceEquals(e.View, ParentViewModelContainer))
             {
                 OnParentViewModelContainerLoading(e.View, EventArgs.Empty);
@@ -510,12 +520,14 @@ namespace Catel.MVVM.Providers
         }
 
         /// <summary>
-        /// Public event to get information about the parent view.
+        /// Called when the view manager is unloading.
         /// </summary>
         /// <param name="sender">The sender.</param>
-        /// <param name="e">The event args.</param>
-        public void OnViewLoadedManagerUnloadingForParentView(object sender, ViewLoadEventArgs e)
+        /// <param name="e">The <see cref="ViewLoadEventArgs"/> instance containing the event data.</param>
+        protected override void OnViewLoadedManagerUnloading(object sender, ViewLoadEventArgs e)
         {
+            base.OnViewLoadedManagerUnloading(sender, e);
+
             if (ReferenceEquals(e.View, ParentViewModelContainer))
             {
                 OnParentViewModelContainerUnloading(e.View, EventArgs.Empty);
@@ -620,13 +632,24 @@ namespace Catel.MVVM.Providers
         private void RegisterViewModelAsChild()
         {
             var parentViewModel = _parentViewModel as IRelationalViewModel;
-            var viewModel = ViewModel as IRelationalViewModel;
-
-            if ((parentViewModel != null) && (viewModel != null) && !ReferenceEquals(parentViewModel, viewModel))
+            if (parentViewModel == null)
             {
-                parentViewModel.RegisterChildViewModel(ViewModel);
-                viewModel.SetParentViewModel(_parentViewModel);
+                return;
             }
+
+            var viewModel = ViewModel as IRelationalViewModel;
+            if (viewModel == null)
+            {
+                return;
+            }
+
+            if (ObjectHelper.AreEqualReferences(parentViewModel, viewModel))
+            {
+                return;
+            }
+
+            parentViewModel.RegisterChildViewModel(viewModel);
+            viewModel.SetParentViewModel(_parentViewModel);
         }
 
         /// <summary>
@@ -635,13 +658,24 @@ namespace Catel.MVVM.Providers
         private void UnregisterViewModelAsChild()
         {
             var parentViewModel = _parentViewModel as IRelationalViewModel;
-            var viewModel = ViewModel as IRelationalViewModel;
-
-            if ((parentViewModel != null) && (viewModel != null) && !ObjectHelper.AreEqualReferences(parentViewModel, viewModel))
+            if (parentViewModel == null)
             {
-                viewModel.SetParentViewModel(null);
-                parentViewModel.UnregisterChildViewModel(ViewModel);
+                return;
             }
+
+            var viewModel = ViewModel as IRelationalViewModel;
+            if (viewModel == null)
+            {
+                return;
+            }
+
+            if (ObjectHelper.AreEqualReferences(parentViewModel, viewModel))
+            {
+                return;
+            }
+
+            viewModel.SetParentViewModel(null);
+            parentViewModel.UnregisterChildViewModel(viewModel);
         }
 
         /// <summary>
@@ -669,7 +703,7 @@ namespace Catel.MVVM.Providers
                         ViewModel = ConstructViewModelUsingArgumentOrDefaultConstructor(newDataContext);
                     }
                 }
-                else if (!(newDataContext.GetType().IsAssignableFromEx(ViewModelType)))
+                else if (!newDataContext.GetType().IsAssignableFromEx(ViewModelType))
                 {
                     if (ViewModel != null)
                     {
@@ -742,8 +776,7 @@ namespace Catel.MVVM.Providers
                     }
                 }
 
-                await vm.CloseViewModelAsync(result);
-                ViewModel = null;
+                await CloseViewModelAsync(result);
             }
         }
 
@@ -895,7 +928,7 @@ namespace Catel.MVVM.Providers
                 return;
             }
 
-#if NET || SL5
+#if NET
             if (_infoBarMessageControl != null)
             {
                 _infoBarMessageControl.ClearObjectMessages(obj);
