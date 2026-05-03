@@ -3071,16 +3071,6 @@
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "vnext/catel-core/pooling/index.md",
-      "output": {
-        ".html": {
-          "relative_path": "vnext/catel-core/pooling/index.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
       "source_relative_path": "vnext/catel-core/preventing-memory-leaks/change-notification-wrapper.md",
       "output": {
         ".html": {
@@ -4010,6 +4000,36 @@
       "version": ""
     },
     {
+      "type": "Conceptual",
+      "source_relative_path": "vnext/catel-sourcegenerators/debugging.md",
+      "output": {
+        ".html": {
+          "relative_path": "vnext/catel-sourcegenerators/debugging.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "vnext/catel-sourcegenerators/index.md",
+      "output": {
+        ".html": {
+          "relative_path": "vnext/catel-sourcegenerators/index.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "vnext/catel-sourcegenerators/xaml-constructors.md",
+      "output": {
+        ".html": {
+          "relative_path": "vnext/catel-sourcegenerators/xaml-constructors.html"
+        }
+      },
+      "version": ""
+    },
+    {
       "type": "Resource",
       "source_relative_path": "vnext/downloads/getting-started/wpf/wpf-getting-started.zip",
       "output": {
@@ -4175,6 +4195,16 @@
       "output": {
         ".html": {
           "relative_path": "vnext/getting-started/wpf/hooking-up-everything-together.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "vnext/getting-started/wpf/hosting-model.md",
+      "output": {
+        ".html": {
+          "relative_path": "vnext/getting-started/wpf/hosting-model.html"
         }
       },
       "version": ""
